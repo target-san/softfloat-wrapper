@@ -21,10 +21,12 @@
 //! }
 //! ```
 
+#[cfg(feature = "f128")]
 mod f128;
 mod f16;
 mod f32;
 mod f64;
+#[cfg(feature = "f128")]
 pub use crate::f128::F128;
 pub use crate::f16::F16;
 pub use crate::f32::F32;
@@ -230,6 +232,7 @@ pub trait Float {
 
     fn to_f64(&self, rnd: RoundingMode) -> F64;
 
+    #[cfg(feature = "f128")]
     fn to_f128(&self, rnd: RoundingMode) -> F128;
 
     fn round_to_integral(&self, rnd: RoundingMode) -> Self;
