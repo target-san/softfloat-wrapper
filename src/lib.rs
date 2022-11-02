@@ -40,6 +40,9 @@ use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::fmt::{LowerHex, UpperHex};
 
+pub const DEFAULT_ROUNDING_MODE: RoundingMode = RoundingMode::TiesToEven;
+pub const DEFAULT_EXACT_MODE: bool = true;
+
 /// floating-point rounding mode defined by standard
 #[derive(Copy, Clone, Debug)]
 pub enum RoundingMode {
