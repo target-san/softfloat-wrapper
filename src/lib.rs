@@ -21,12 +21,12 @@
 //! }
 //! ```
 
-#[cfg(feature = "f128")]
+#[cfg(not(feature = "concordium"))]
 mod f128;
 mod f16;
 mod f32;
 mod f64;
-#[cfg(feature = "f128")]
+#[cfg(not(feature = "concordium"))]
 pub use crate::f128::F128;
 pub use crate::f16::F16;
 pub use crate::f32::F32;
@@ -173,6 +173,12 @@ pub trait SoftFloat {
     const SIGN_POS: usize;
     const EXPONENT_POS: usize;
 
+    #[cfg(not(feature = "concordium"))]
+    fn from_native_f32(value: f32) -> Self;
+
+    #[cfg(not(feature = "concordium"))]
+    fn from_native_f64(value: f64) -> Self;
+
     fn set_payload(&mut self, x: Self::Payload);
 
     fn from_bits(v: Self::Payload) -> Self;
@@ -232,7 +238,7 @@ pub trait SoftFloat {
 
     fn to_f64(&self, rnd: RoundingMode) -> F64;
 
-    #[cfg(feature = "f128")]
+    #[cfg(not(feature = "concordium"))]
     fn to_f128(&self, rnd: RoundingMode) -> F128;
 
     fn round_to_integral(&self, rnd: RoundingMode) -> Self;

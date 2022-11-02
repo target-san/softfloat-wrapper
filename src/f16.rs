@@ -6,21 +6,19 @@ use std::borrow::Borrow;
 #[derive(Copy, Clone, Debug)]
 pub struct F16(float16_t);
 
-impl F16 {
-    /// Converts primitive `f32` to `F16`
-    pub fn from_f32(v: f32) -> Self {
-        F32::from_bits(v.to_bits()).to_f16(RoundingMode::TiesToEven)
-    }
-
-    /// Converts primitive `f64` to `F16`
-    pub fn from_f64(v: f64) -> Self {
-        F64::from_bits(v.to_bits()).to_f16(RoundingMode::TiesToEven)
-    }
-}
-
 impl SoftFloat for F16 {
     type Payload = u16;
 
+    #[cfg(not(feature = "concordium"))]
+    fn from_native_f32(v: f32) -> Self {
+        F32::from_bits(v.to_bits()).to_f16(RoundingMode::TiesToEven)
+    }
+
+    #[cfg(not(feature = "concordium"))]
+    fn from_native_f64(v: f64) -> Self {
+        F64::from_bits(v.to_bits()).to_f16(RoundingMode::TiesToEven)
+    }
+    
     const EXPONENT_BIT: Self::Payload = 0x1f;
     const MANTISSA_BIT: Self::Payload = 0x3ff;
     const SIGN_POS: usize = 15;
@@ -176,7 +174,7 @@ impl SoftFloat for F16 {
         F64::from_bits(ret.v)
     }
 
-    #[cfg(feature = "f128")]
+    #[cfg(not(feature = "concordium"))]
     fn to_f128(&self, rnd: RoundingMode) -> super::F128 {
         rnd.set();
         let ret = unsafe { softfloat_sys::f16_to_f128(self.0) };
@@ -344,15 +342,17 @@ mod tests {
         assert_eq!(flag.is_invalid(), true);
     }
 
+    #[cfg(not(feature = "concordium"))]
     #[test]
     fn from_f32() {
-        let a = F16::from_f32(0.1);
+        let a = F16::from_native_f32(0.1);
         assert_eq!(a.to_bits(), 0x2e66);
     }
 
+    #[cfg(not(feature = "concordium"))]
     #[test]
     fn from_f64() {
-        let a = F16::from_f64(0.1);
+        let a = F16::from_native_f64(0.1);
         assert_eq!(a.to_bits(), 0x2e66);
     }
 }
