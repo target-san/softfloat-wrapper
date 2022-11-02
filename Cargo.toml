@@ -19,7 +19,8 @@ f128 = []
 num-traits = "0.2.12"
 
 [dependencies.softfloat-sys]
-path = "../softfloat-sys"
+git = "https://github.com/tacanslabs/softfloat-sys.git"
+rev = "7017872241262d26cb5bbdc72da50869b99ae4df"
 
 [dev-dependencies]
 simple-soft-float = "0.1.0"
