@@ -19,7 +19,7 @@ f128 = []
 num-traits = "0.2.12"
 
 [dependencies.softfloat-sys]
-git = "https://github.com/tacanslabs/softfloat-sys.git"
+git = "https://github.com/target-san/softfloat-sys.git"
 rev = "7017872241262d26cb5bbdc72da50869b99ae4df"
 
 [dev-dependencies]
