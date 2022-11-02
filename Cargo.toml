@@ -14,9 +14,14 @@ edition = "2018"
 
 [features]
 f128 = []
+concordium = ["dep:concordium-std"]
 
 [dependencies]
 num-traits = "0.2.12"
+
+[dependencies.concordium-std]
+version = "4.0"
+optional = true
 
 [dependencies.softfloat-sys]
 git = "https://github.com/target-san/softfloat-sys.git"
