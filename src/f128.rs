@@ -22,7 +22,7 @@ impl SoftFloat for F128 {
     type Payload = u128;
 
     const EXPONENT_BIT: Self::Payload = 0x7fff;
-    const FRACTION_BIT: Self::Payload = 0xffff_ffff_ffff_ffff_ffff_ffff_ffff;
+    const MANTISSA_BIT: Self::Payload = 0xffff_ffff_ffff_ffff_ffff_ffff_ffff;
     const SIGN_POS: usize = 127;
     const EXPONENT_POS: usize = 112;
 

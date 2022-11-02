@@ -22,7 +22,7 @@ impl SoftFloat for F64 {
     type Payload = u64;
 
     const EXPONENT_BIT: Self::Payload = 0x7ff;
-    const FRACTION_BIT: Self::Payload = 0xf_ffff_ffff_ffff;
+    const MANTISSA_BIT: Self::Payload = 0xf_ffff_ffff_ffff;
     const SIGN_POS: usize = 63;
     const EXPONENT_POS: usize = 52;
 

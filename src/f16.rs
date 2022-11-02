@@ -22,7 +22,7 @@ impl SoftFloat for F16 {
     type Payload = u16;
 
     const EXPONENT_BIT: Self::Payload = 0x1f;
-    const FRACTION_BIT: Self::Payload = 0x3ff;
+    const MANTISSA_BIT: Self::Payload = 0x3ff;
     const SIGN_POS: usize = 15;
     const EXPONENT_POS: usize = 10;
 
