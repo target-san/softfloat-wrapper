@@ -165,7 +165,7 @@ impl ExceptionFlags {
 /// let a = F32::from_bits(0x12345678);
 /// let a = rsqrt(a);
 /// ```
-pub trait Float {
+pub trait SoftFloat {
     type Payload: PrimInt + UpperHex + LowerHex;
 
     const EXPONENT_BIT: Self::Payload;
