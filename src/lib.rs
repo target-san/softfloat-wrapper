@@ -169,12 +169,20 @@ impl ExceptionFlags {
 /// let a = rsqrt(a);
 /// ```
 pub trait SoftFloat {
+    /// Actual storage type for concrete softfloat implementation
     type Payload: PrimInt + UpperHex + LowerHex;
-
-    const EXPONENT_BIT: Self::Payload;
-    const MANTISSA_BIT: Self::Payload;
-    const SIGN_POS: usize;
-    const EXPONENT_POS: usize;
+    /// Mask for mantissa value, starting from 0th bit
+    const MANTISSA_MASK: Self::Payload;
+    /// Mask for exponent value, starting from 0th bit
+    const EXPONENT_MASK: Self::Payload;
+    /// Number of mantissa bits, excluding sign
+    const MANTISSA_BITS: usize;
+    /// Number of exponent bits
+    const EXPONENT_BITS: usize;
+    /// Sign bit offset
+    const SIGN_OFFSET: usize;
+    /// Exponent bits offset
+    const EXPONENT_OFFSET: usize;
 
     #[cfg(not(feature = "concordium"))]
     fn from_native_f32(value: f32) -> Self;
@@ -315,17 +323,17 @@ pub trait SoftFloat {
 
     #[inline]
     fn sign(&self) -> Self::Payload {
-        (self.to_bits() >> Self::SIGN_POS) & Self::Payload::one()
+        (self.to_bits() >> Self::SIGN_OFFSET) & Self::Payload::one()
     }
 
     #[inline]
     fn exponent(&self) -> Self::Payload {
-        (self.to_bits() >> Self::EXPONENT_POS) & Self::EXPONENT_BIT
+        (self.to_bits() >> Self::EXPONENT_OFFSET) & Self::EXPONENT_MASK
     }
 
     #[inline]
     fn mantissa(&self) -> Self::Payload {
-        self.to_bits() & Self::MANTISSA_BIT
+        self.to_bits() & Self::MANTISSA_MASK
     }
 
     #[inline]
@@ -351,13 +359,13 @@ pub trait SoftFloat {
     fn is_positive_normal(&self) -> bool {
         self.is_positive()
             && self.exponent() != Self::Payload::zero()
-            && self.exponent() != Self::EXPONENT_BIT
+            && self.exponent() != Self::EXPONENT_MASK
     }
 
     #[inline]
     fn is_positive_infinity(&self) -> bool {
         self.is_positive()
-            && self.exponent() == Self::EXPONENT_BIT
+            && self.exponent() == Self::EXPONENT_MASK
             && self.mantissa() == Self::Payload::zero()
     }
 
@@ -384,19 +392,19 @@ pub trait SoftFloat {
     fn is_negative_normal(&self) -> bool {
         self.is_negative()
             && self.exponent() != Self::Payload::zero()
-            && self.exponent() != Self::EXPONENT_BIT
+            && self.exponent() != Self::EXPONENT_MASK
     }
 
     #[inline]
     fn is_negative_infinity(&self) -> bool {
         self.is_negative()
-            && self.exponent() == Self::EXPONENT_BIT
+            && self.exponent() == Self::EXPONENT_MASK
             && self.mantissa() == Self::Payload::zero()
     }
 
     #[inline]
     fn is_nan(&self) -> bool {
-        self.exponent() == Self::EXPONENT_BIT && self.mantissa() != Self::Payload::zero()
+        self.exponent() == Self::EXPONENT_MASK && self.mantissa() != Self::Payload::zero()
     }
 
     #[inline]
@@ -412,22 +420,22 @@ pub trait SoftFloat {
     #[inline]
     fn set_sign(&mut self, x: Self::Payload) {
         self.set_payload(
-            (self.to_bits() & !(Self::Payload::one() << Self::SIGN_POS))
-                | ((x & Self::Payload::one()) << Self::SIGN_POS),
+            (self.to_bits() & !(Self::Payload::one() << Self::SIGN_OFFSET))
+                | ((x & Self::Payload::one()) << Self::SIGN_OFFSET),
         );
     }
 
     #[inline]
     fn set_exponent(&mut self, x: Self::Payload) {
         self.set_payload(
-            (self.to_bits() & !(Self::EXPONENT_BIT << Self::EXPONENT_POS))
-                | ((x & Self::EXPONENT_BIT) << Self::EXPONENT_POS),
+            (self.to_bits() & !(Self::EXPONENT_MASK << Self::EXPONENT_OFFSET))
+                | ((x & Self::EXPONENT_MASK) << Self::EXPONENT_OFFSET),
         );
     }
 
     #[inline]
     fn set_mantissa(&mut self, x: Self::Payload) {
-        self.set_payload((self.to_bits() & !Self::MANTISSA_BIT) | (x & Self::MANTISSA_BIT));
+        self.set_payload((self.to_bits() & !Self::MANTISSA_MASK) | (x & Self::MANTISSA_MASK));
     }
 
     #[inline]
@@ -436,7 +444,7 @@ pub trait SoftFloat {
         Self: Sized,
     {
         let mut x = Self::from_bits(Self::Payload::zero());
-        x.set_exponent(Self::EXPONENT_BIT);
+        x.set_exponent(Self::EXPONENT_MASK);
         x
     }
 
@@ -456,7 +464,7 @@ pub trait SoftFloat {
     {
         let mut x = Self::from_bits(Self::Payload::zero());
         x.set_sign(Self::Payload::one());
-        x.set_exponent(Self::EXPONENT_BIT);
+        x.set_exponent(Self::EXPONENT_MASK);
         x
     }
 
@@ -476,8 +484,8 @@ pub trait SoftFloat {
         Self: Sized,
     {
         let mut x = Self::from_bits(Self::Payload::zero());
-        x.set_exponent(Self::EXPONENT_BIT);
-        x.set_mantissa(Self::Payload::one() << (Self::EXPONENT_POS - 1));
+        x.set_exponent(Self::EXPONENT_MASK);
+        x.set_mantissa(Self::Payload::one() << (Self::EXPONENT_OFFSET - 1));
         x
     }
 }

@@ -1,4 +1,4 @@
-use crate::{SoftFloat, RoundingMode, F16, F32, DEFAULT_ROUNDING_MODE, DEFAULT_EXACT_MODE};
+use crate::{SoftFloat, RoundingMode, F16, F32, DEFAULT_ROUNDING_MODE};
 use num_traits::One;
 use softfloat_sys::float64_t;
 use std::{borrow::Borrow, ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, Rem, RemAssign, Neg}};
@@ -133,152 +133,15 @@ impl PartialOrd for F64 {
     }
 }
 
-#[cfg(not(feature = "concordium"))]
-impl From<f32> for F64 {
-    fn from(value: f32) -> Self {
-        F64::from_native_f32(value)
-    }
-}
-
-#[cfg(not(feature = "concordium"))]
-impl From<f64> for F64 {
-    fn from(value: f64) -> Self {
-        F64::from_native_f64(value)
-    }
-}
-
-impl From<i8> for F64 {
-    fn from(value: i8) -> Self {
-        SoftFloat::from_i8(value, DEFAULT_ROUNDING_MODE)
-    }
-}
-
-impl From<i16> for F64 {
-    fn from(value: i16) -> Self {
-        SoftFloat::from_i16(value, DEFAULT_ROUNDING_MODE)
-    }
-}
-
-impl From<i32> for F64 {
-    fn from(value: i32) -> Self {
-        SoftFloat::from_i32(value, DEFAULT_ROUNDING_MODE)
-    }
-}
-
-impl From<i64> for F64 {
-    fn from(value: i64) -> Self {
-        SoftFloat::from_i64(value, DEFAULT_ROUNDING_MODE)
-    }
-}
-
-impl From<i128> for F64 {
-    fn from(value: i128) -> Self {
-        // FIXME: need proper implementation
-        SoftFloat::from_i64(value as i64, DEFAULT_ROUNDING_MODE)
-    }
-}
-
-impl From<u8> for F64 {
-    fn from(value: u8) -> Self {
-        SoftFloat::from_u8(value, DEFAULT_ROUNDING_MODE)
-    }
-}
-
-impl From<u16> for F64 {
-    fn from(value: u16) -> Self {
-        SoftFloat::from_u16(value, DEFAULT_ROUNDING_MODE)
-    }
-}
-
-impl From<u32> for F64 {
-    fn from(value: u32) -> Self {
-        SoftFloat::from_u32(value, DEFAULT_ROUNDING_MODE)
-    }
-}
-
-impl From<u64> for F64 {
-    fn from(value: u64) -> Self {
-        SoftFloat::from_u64(value, DEFAULT_ROUNDING_MODE)
-    }
-}
-
-impl From<u128> for F64 {
-    fn from(value: u128) -> Self {
-        // FIXME: need proper implementation
-        SoftFloat::from_u64(value as u64, DEFAULT_ROUNDING_MODE)
-    }
-}
-
-impl From<F64> for i128 {
-    fn from(value: F64) -> Self {
-        // FIXME: need proper implementation
-        SoftFloat::to_i64(&value, DEFAULT_ROUNDING_MODE, DEFAULT_EXACT_MODE) as i128
-    }
-}
-
-impl From<F64> for u128 {
-    fn from(value: F64) -> Self {
-        // FIXME: need proper implementation
-        SoftFloat::to_u64(&value, DEFAULT_ROUNDING_MODE, DEFAULT_EXACT_MODE) as u128
-    }
-}
-
-impl num_traits::Num for F64 {
-    type FromStrRadixErr = ();
-
-    fn from_str_radix(_str: &str, _radix: u32) -> Result<Self, Self::FromStrRadixErr> {
-        unimplemented!()
-    }
-}
-
-impl num_traits::Signed for F64 {
-    fn abs(&self) -> Self {
-        SoftFloat::abs(&self)
-    }
-
-    fn abs_sub(&self, other: &Self) -> Self {
-        let result = *self - *other;
-        if SoftFloat::is_positive(self) {
-            result
-        }
-        else {
-            num_traits::Zero::zero()
-        }
-    }
-
-    fn signum(&self) -> Self {
-        if SoftFloat::is_nan(self) {
-            SoftFloat::quiet_nan()
-        }
-        else if SoftFloat::is_negative(self) {
-            -Self::one()
-        }
-        else {
-            Self::one()
-        }
-    }
-
-    fn is_positive(&self) -> bool {
-        !SoftFloat::is_zero(self)
-        && SoftFloat::is_positive(self)
-    }
-
-    fn is_negative(&self) -> bool {
-        !SoftFloat::is_zero(self)
-        && SoftFloat::is_negative(self)
-    }
-}
-// `num_traits::Float` requires trigonometry and some other funcs,
-// so it's used only as guiding trait here
-// impl num_traits::Float for F64 {}
-
 impl SoftFloat for F64 {
     type Payload = u64;
 
-    const EXPONENT_BIT: Self::Payload = 0x7ff;
-    const MANTISSA_BIT: Self::Payload = 0xf_ffff_ffff_ffff;
-    const SIGN_POS: usize = 63;
-    const EXPONENT_POS: usize = 52;
+    const MANTISSA_MASK: Self::Payload = 0xf_ffff_ffff_ffff;
+    const EXPONENT_MASK: Self::Payload = 0x7ff;
+    const MANTISSA_BITS: usize = 52;
+    const EXPONENT_BITS: usize = 11;
+    const SIGN_OFFSET: usize = 63;
+    const EXPONENT_OFFSET: usize = 52;
 
     #[cfg(not(feature = "concordium"))]
     fn from_native_f32(v: f32) -> Self {

@@ -12,10 +12,12 @@ impl F32 {
 impl SoftFloat for F32 {
     type Payload = u32;
 
-    const EXPONENT_BIT: Self::Payload = 0xff;
-    const MANTISSA_BIT: Self::Payload = 0x7f_ffff;
-    const SIGN_POS: usize = 31;
-    const EXPONENT_POS: usize = 23;
+    const MANTISSA_MASK: Self::Payload = 0x7f_ffff;
+    const EXPONENT_MASK: Self::Payload = 0xff;
+    const MANTISSA_BITS: usize = 23;
+    const EXPONENT_BITS: usize = 8;
+    const SIGN_OFFSET: usize = 31;
+    const EXPONENT_OFFSET: usize = 23;
 
     #[cfg(not(feature = "concordium"))]
     fn from_native_f32(v: f32) -> Self {

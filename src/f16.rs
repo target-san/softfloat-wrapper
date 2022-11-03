@@ -19,10 +19,12 @@ impl SoftFloat for F16 {
         F64::from_bits(v.to_bits()).to_f16(RoundingMode::TiesToEven)
     }
     
-    const EXPONENT_BIT: Self::Payload = 0x1f;
-    const MANTISSA_BIT: Self::Payload = 0x3ff;
-    const SIGN_POS: usize = 15;
-    const EXPONENT_POS: usize = 10;
+    const MANTISSA_MASK: Self::Payload = 0x3ff;
+    const EXPONENT_MASK: Self::Payload = 0x1f;
+    const MANTISSA_BITS: usize = 10;
+    const EXPONENT_BITS: usize = 5;
+    const SIGN_OFFSET: usize = 15;
+    const EXPONENT_OFFSET: usize = 10;
 
     #[inline]
     fn set_payload(&mut self, x: Self::Payload) {

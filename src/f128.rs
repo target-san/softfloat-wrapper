@@ -9,10 +9,12 @@ pub struct F128(float128_t);
 impl SoftFloat for F128 {
     type Payload = u128;
 
-    const EXPONENT_BIT: Self::Payload = 0x7fff;
-    const MANTISSA_BIT: Self::Payload = 0xffff_ffff_ffff_ffff_ffff_ffff_ffff;
-    const SIGN_POS: usize = 127;
-    const EXPONENT_POS: usize = 112;
+    const MANTISSA_MASK: Self::Payload = 0xffff_ffff_ffff_ffff_ffff_ffff_ffff;
+    const EXPONENT_MASK: Self::Payload = 0x7fff;
+    const MANTISSA_BITS: usize = 112;
+    const EXPONENT_BITS: usize = 15;
+    const EXPONENT_OFFSET: usize = 112;
+    const SIGN_OFFSET: usize = 127;
 
     #[cfg(not(feature = "concordium"))]
     fn from_native_f32(v: f32) -> Self {
