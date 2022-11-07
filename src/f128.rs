@@ -1,4 +1,4 @@
-use crate::{SoftFloat, RoundingMode, F16, F32, F64};
+use crate::{RoundingMode, SoftFloat, F16, F32, F64};
 use softfloat_sys::float128_t;
 use std::borrow::Borrow;
 

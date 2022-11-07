@@ -1,4 +1,4 @@
-use crate::{SoftFloat, RoundingMode, F16, F64};
+use crate::{RoundingMode, SoftFloat, F16, F64};
 use softfloat_sys::float32_t;
 use std::borrow::Borrow;
 
@@ -6,8 +6,7 @@ use std::borrow::Borrow;
 #[derive(Copy, Clone, Debug)]
 pub struct F32(float32_t);
 
-impl F32 {
-}
+impl F32 {}
 
 impl SoftFloat for F32 {
     type Payload = u32;

@@ -1,7 +1,10 @@
-use crate::{SoftFloat, RoundingMode, F16, F32, DEFAULT_ROUNDING_MODE};
+use crate::{RoundingMode, SoftFloat, DEFAULT_ROUNDING_MODE, F16, F32};
 use num_traits::One;
 use softfloat_sys::float64_t;
-use std::{borrow::Borrow, ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, Rem, RemAssign, Neg}};
+use std::{
+    borrow::Borrow,
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign},
+};
 
 /// standard 64-bit float
 #[derive(Copy, Clone, Debug)]

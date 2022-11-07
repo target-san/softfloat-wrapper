@@ -1,4 +1,4 @@
-use crate::{SoftFloat, RoundingMode, F32, F64};
+use crate::{RoundingMode, SoftFloat, F32, F64};
 use softfloat_sys::float16_t;
 use std::borrow::Borrow;
 
@@ -18,7 +18,7 @@ impl SoftFloat for F16 {
     fn from_native_f64(v: f64) -> Self {
         F64::from_bits(v.to_bits()).to_f16(RoundingMode::TiesToEven)
     }
-    
+
     const MANTISSA_MASK: Self::Payload = 0x3ff;
     const EXPONENT_MASK: Self::Payload = 0x1f;
     const MANTISSA_BITS: usize = 10;

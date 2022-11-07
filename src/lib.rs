@@ -3,7 +3,7 @@
 //! ## Examples
 //!
 //! ```
-//! use softfloat_wrapper::{Float, F16, RoundingMode};
+//! use softfloat_wrapper::{SoftFloat, F16, RoundingMode};
 //!
 //! fn main() {
 //!     let a = 0x1234;
@@ -81,7 +81,7 @@ impl RoundingMode {
 /// ## Examples
 ///
 /// ```
-/// use softfloat_wrapper::{ExceptionFlags, Float, RoundingMode, F16};
+/// use softfloat_wrapper::{ExceptionFlags, SoftFloat, RoundingMode, F16};
 ///
 /// let a = 0x0;
 /// let b = 0x0;
@@ -155,9 +155,9 @@ impl ExceptionFlags {
 /// `Float` can be used for generic functions.
 ///
 /// ```
-/// use softfloat_wrapper::{Float, RoundingMode, F16, F32};
+/// use softfloat_wrapper::{SoftFloat, RoundingMode, F16, F32};
 ///
-/// fn rsqrt<T: Float>(x: T) -> T {
+/// fn rsqrt<T: SoftFloat>(x: T) -> T {
 ///     let ret = x.sqrt(RoundingMode::TiesToEven);
 ///     let one = T::from_u8(1, RoundingMode::TiesToEven);
 ///     one.div(ret, RoundingMode::TiesToEven)
