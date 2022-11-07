@@ -3,7 +3,7 @@
 //! ## Examples
 //!
 //! ```
-//! use softfloat_wrapper::{Float, F16, RoundingMode};
+//! use softfloat_wrapper::{SoftFloat, F16, RoundingMode};
 //!
 //! fn main() {
 //!     let a = 0x1234;
@@ -21,10 +21,12 @@
 //! }
 //! ```
 
+#[cfg(not(feature = "concordium"))]
 mod f128;
 mod f16;
 mod f32;
 mod f64;
+#[cfg(not(feature = "concordium"))]
 pub use crate::f128::F128;
 pub use crate::f16::F16;
 pub use crate::f32::F32;
@@ -37,6 +39,9 @@ use num_traits::{
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::fmt::{LowerHex, UpperHex};
+
+pub const DEFAULT_ROUNDING_MODE: RoundingMode = RoundingMode::TiesToAway;
+pub const DEFAULT_EXACT_MODE: bool = true;
 
 /// floating-point rounding mode defined by standard
 #[derive(Copy, Clone, Debug)]
@@ -76,7 +81,7 @@ impl RoundingMode {
 /// ## Examples
 ///
 /// ```
-/// use softfloat_wrapper::{ExceptionFlags, Float, RoundingMode, F16};
+/// use softfloat_wrapper::{ExceptionFlags, SoftFloat, RoundingMode, F16};
 ///
 /// let a = 0x0;
 /// let b = 0x0;
@@ -150,9 +155,9 @@ impl ExceptionFlags {
 /// `Float` can be used for generic functions.
 ///
 /// ```
-/// use softfloat_wrapper::{Float, RoundingMode, F16, F32};
+/// use softfloat_wrapper::{SoftFloat, RoundingMode, F16, F32};
 ///
-/// fn rsqrt<T: Float>(x: T) -> T {
+/// fn rsqrt<T: SoftFloat>(x: T) -> T {
 ///     let ret = x.sqrt(RoundingMode::TiesToEven);
 ///     let one = T::from_u8(1, RoundingMode::TiesToEven);
 ///     one.div(ret, RoundingMode::TiesToEven)
@@ -163,13 +168,27 @@ impl ExceptionFlags {
 /// let a = F32::from_bits(0x12345678);
 /// let a = rsqrt(a);
 /// ```
-pub trait Float {
+pub trait SoftFloat {
+    /// Actual storage type for concrete softfloat implementation
     type Payload: PrimInt + UpperHex + LowerHex;
+    /// Mask for mantissa value, starting from 0th bit
+    const MANTISSA_MASK: Self::Payload;
+    /// Mask for exponent value, starting from 0th bit
+    const EXPONENT_MASK: Self::Payload;
+    /// Number of mantissa bits, excluding sign
+    const MANTISSA_BITS: usize;
+    /// Number of exponent bits
+    const EXPONENT_BITS: usize;
+    /// Sign bit offset
+    const SIGN_OFFSET: usize;
+    /// Exponent bits offset
+    const EXPONENT_OFFSET: usize;
 
-    const EXPONENT_BIT: Self::Payload;
-    const FRACTION_BIT: Self::Payload;
-    const SIGN_POS: usize;
-    const EXPONENT_POS: usize;
+    #[cfg(not(feature = "concordium"))]
+    fn from_native_f32(value: f32) -> Self;
+
+    #[cfg(not(feature = "concordium"))]
+    fn from_native_f64(value: f64) -> Self;
 
     fn set_payload(&mut self, x: Self::Payload);
 
@@ -230,6 +249,7 @@ pub trait Float {
 
     fn to_f64(&self, rnd: RoundingMode) -> F64;
 
+    #[cfg(not(feature = "concordium"))]
     fn to_f128(&self, rnd: RoundingMode) -> F128;
 
     fn round_to_integral(&self, rnd: RoundingMode) -> Self;
@@ -303,17 +323,17 @@ pub trait Float {
 
     #[inline]
     fn sign(&self) -> Self::Payload {
-        (self.to_bits() >> Self::SIGN_POS) & Self::Payload::one()
+        (self.to_bits() >> Self::SIGN_OFFSET) & Self::Payload::one()
     }
 
     #[inline]
     fn exponent(&self) -> Self::Payload {
-        (self.to_bits() >> Self::EXPONENT_POS) & Self::EXPONENT_BIT
+        (self.to_bits() >> Self::EXPONENT_OFFSET) & Self::EXPONENT_MASK
     }
 
     #[inline]
-    fn fraction(&self) -> Self::Payload {
-        self.to_bits() & Self::FRACTION_BIT
+    fn mantissa(&self) -> Self::Payload {
+        self.to_bits() & Self::MANTISSA_MASK
     }
 
     #[inline]
@@ -325,28 +345,28 @@ pub trait Float {
     fn is_positive_zero(&self) -> bool {
         self.is_positive()
             && self.exponent() == Self::Payload::zero()
-            && self.fraction() == Self::Payload::zero()
+            && self.mantissa() == Self::Payload::zero()
     }
 
     #[inline]
     fn is_positive_subnormal(&self) -> bool {
         self.is_positive()
             && self.exponent() == Self::Payload::zero()
-            && self.fraction() != Self::Payload::zero()
+            && self.mantissa() != Self::Payload::zero()
     }
 
     #[inline]
     fn is_positive_normal(&self) -> bool {
         self.is_positive()
             && self.exponent() != Self::Payload::zero()
-            && self.exponent() != Self::EXPONENT_BIT
+            && self.exponent() != Self::EXPONENT_MASK
     }
 
     #[inline]
     fn is_positive_infinity(&self) -> bool {
         self.is_positive()
-            && self.exponent() == Self::EXPONENT_BIT
-            && self.fraction() == Self::Payload::zero()
+            && self.exponent() == Self::EXPONENT_MASK
+            && self.mantissa() == Self::Payload::zero()
     }
 
     #[inline]
@@ -358,33 +378,33 @@ pub trait Float {
     fn is_negative_zero(&self) -> bool {
         self.is_negative()
             && self.exponent() == Self::Payload::zero()
-            && self.fraction() == Self::Payload::zero()
+            && self.mantissa() == Self::Payload::zero()
     }
 
     #[inline]
     fn is_negative_subnormal(&self) -> bool {
         self.is_negative()
             && self.exponent() == Self::Payload::zero()
-            && self.fraction() != Self::Payload::zero()
+            && self.mantissa() != Self::Payload::zero()
     }
 
     #[inline]
     fn is_negative_normal(&self) -> bool {
         self.is_negative()
             && self.exponent() != Self::Payload::zero()
-            && self.exponent() != Self::EXPONENT_BIT
+            && self.exponent() != Self::EXPONENT_MASK
     }
 
     #[inline]
     fn is_negative_infinity(&self) -> bool {
         self.is_negative()
-            && self.exponent() == Self::EXPONENT_BIT
-            && self.fraction() == Self::Payload::zero()
+            && self.exponent() == Self::EXPONENT_MASK
+            && self.mantissa() == Self::Payload::zero()
     }
 
     #[inline]
     fn is_nan(&self) -> bool {
-        self.exponent() == Self::EXPONENT_BIT && self.fraction() != Self::Payload::zero()
+        self.exponent() == Self::EXPONENT_MASK && self.mantissa() != Self::Payload::zero()
     }
 
     #[inline]
@@ -400,22 +420,22 @@ pub trait Float {
     #[inline]
     fn set_sign(&mut self, x: Self::Payload) {
         self.set_payload(
-            (self.to_bits() & !(Self::Payload::one() << Self::SIGN_POS))
-                | ((x & Self::Payload::one()) << Self::SIGN_POS),
+            (self.to_bits() & !(Self::Payload::one() << Self::SIGN_OFFSET))
+                | ((x & Self::Payload::one()) << Self::SIGN_OFFSET),
         );
     }
 
     #[inline]
     fn set_exponent(&mut self, x: Self::Payload) {
         self.set_payload(
-            (self.to_bits() & !(Self::EXPONENT_BIT << Self::EXPONENT_POS))
-                | ((x & Self::EXPONENT_BIT) << Self::EXPONENT_POS),
+            (self.to_bits() & !(Self::EXPONENT_MASK << Self::EXPONENT_OFFSET))
+                | ((x & Self::EXPONENT_MASK) << Self::EXPONENT_OFFSET),
         );
     }
 
     #[inline]
-    fn set_fraction(&mut self, x: Self::Payload) {
-        self.set_payload((self.to_bits() & !Self::FRACTION_BIT) | (x & Self::FRACTION_BIT));
+    fn set_mantissa(&mut self, x: Self::Payload) {
+        self.set_payload((self.to_bits() & !Self::MANTISSA_MASK) | (x & Self::MANTISSA_MASK));
     }
 
     #[inline]
@@ -424,7 +444,7 @@ pub trait Float {
         Self: Sized,
     {
         let mut x = Self::from_bits(Self::Payload::zero());
-        x.set_exponent(Self::EXPONENT_BIT);
+        x.set_exponent(Self::EXPONENT_MASK);
         x
     }
 
@@ -444,7 +464,7 @@ pub trait Float {
     {
         let mut x = Self::from_bits(Self::Payload::zero());
         x.set_sign(Self::Payload::one());
-        x.set_exponent(Self::EXPONENT_BIT);
+        x.set_exponent(Self::EXPONENT_MASK);
         x
     }
 
@@ -464,8 +484,8 @@ pub trait Float {
         Self: Sized,
     {
         let mut x = Self::from_bits(Self::Payload::zero());
-        x.set_exponent(Self::EXPONENT_BIT);
-        x.set_fraction(Self::Payload::one() << (Self::EXPONENT_POS - 1));
+        x.set_exponent(Self::EXPONENT_MASK);
+        x.set_mantissa(Self::Payload::one() << (Self::EXPONENT_OFFSET - 1));
         x
     }
 }

@@ -1,6 +1,6 @@
 [package]
 name = "softfloat-wrapper"
-version = "0.3.4-pre"
+version = "0.4.0"
 authors = ["dalance@gmail.com"]
 repository = "https://github.com/dalance/softfloat-wrapper"
 keywords = ["softfloat"]
@@ -13,19 +13,18 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default              = ["8086-sse"]
-8086                 = ["softfloat-sys/8086"]
-8086-sse             = ["softfloat-sys/8086-sse"]
-arm-vfpv2            = ["softfloat-sys/arm-vfpv2"]
-arm-vfpv2-defaultnan = ["softfloat-sys/arm-vfpv2-defaultnan"]
-riscv                = ["softfloat-sys/riscv"]
+concordium = ["dep:concordium-std"]
 
 [dependencies]
 num-traits = "0.2.12"
 
+[dependencies.concordium-std]
+version = "4.0"
+optional = true
+
 [dependencies.softfloat-sys]
-version = "0.1.3"
-default-features = false
+git = "https://github.com/tacanslabs/softfloat-sys.git"
+rev = "9d99f3566e46984a2f016f173998a7dc27ab3c47"
 
 [dev-dependencies]
 simple-soft-float = "0.1.0"

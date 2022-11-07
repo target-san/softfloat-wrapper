@@ -1,4 +1,4 @@
-use crate::{Float, RoundingMode, F16, F32, F64};
+use crate::{RoundingMode, SoftFloat, F16, F32, F64};
 use softfloat_sys::float128_t;
 use std::borrow::Borrow;
 
@@ -6,25 +6,25 @@ use std::borrow::Borrow;
 #[derive(Copy, Clone, Debug)]
 pub struct F128(float128_t);
 
-impl F128 {
-    /// Converts primitive `f32` to `F128`
-    pub fn from_f32(v: f32) -> Self {
+impl SoftFloat for F128 {
+    type Payload = u128;
+
+    const MANTISSA_MASK: Self::Payload = 0xffff_ffff_ffff_ffff_ffff_ffff_ffff;
+    const EXPONENT_MASK: Self::Payload = 0x7fff;
+    const MANTISSA_BITS: usize = 112;
+    const EXPONENT_BITS: usize = 15;
+    const EXPONENT_OFFSET: usize = 112;
+    const SIGN_OFFSET: usize = 127;
+
+    #[cfg(not(feature = "concordium"))]
+    fn from_native_f32(v: f32) -> Self {
         F32::from_bits(v.to_bits()).to_f128(RoundingMode::TiesToEven)
     }
 
-    /// Converts primitive `f64` to `F128`
-    pub fn from_f64(v: f64) -> Self {
+    #[cfg(not(feature = "concordium"))]
+    fn from_native_f64(v: f64) -> Self {
         F64::from_bits(v.to_bits()).to_f128(RoundingMode::TiesToEven)
     }
-}
-
-impl Float for F128 {
-    type Payload = u128;
-
-    const EXPONENT_BIT: Self::Payload = 0x7fff;
-    const FRACTION_BIT: Self::Payload = 0xffff_ffff_ffff_ffff_ffff_ffff_ffff;
-    const SIGN_POS: usize = 127;
-    const EXPONENT_POS: usize = 112;
 
     #[inline]
     fn set_payload(&mut self, x: Self::Payload) {
@@ -348,15 +348,17 @@ mod tests {
         assert_eq!(flag.is_invalid(), true);
     }
 
+    #[cfg(not(feature = "concordium"))]
     #[test]
     fn from_f32() {
-        let a = F128::from_f32(0.1);
+        let a = F128::from_native_f32(0.1);
         assert_eq!(a.to_bits(), 0x3ffb99999a0000000000000000000000);
     }
 
+    #[cfg(not(feature = "concordium"))]
     #[test]
     fn from_f64() {
-        let a = F128::from_f64(0.1);
+        let a = F128::from_native_f64(0.1);
         assert_eq!(a.to_bits(), 0x3ffb999999999999a000000000000000);
     }
 }

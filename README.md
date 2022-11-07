@@ -5,11 +5,17 @@ softfloat-wrapper is a safe wrapper of [Berkeley SoftFloat](https://github.com/u
 [![Crates.io](https://img.shields.io/crates/v/softfloat-wrapper.svg)](https://crates.io/crates/softfloat-wrapper)
 [![Docs.rs](https://docs.rs/softfloat-wrapper/badge.svg)](https://docs.rs/softfloat-wrapper)
 
+# Requirements
+
+* Rust 1.64 - `core::ffi` types in stable
+* `rustfmt` - used by `bindgen` to format bindings
+* `clang` and `libclang` - used by `bindgen` to generate some bindings
+
 ## Usage
 
 ```Cargo.toml
-[dependencies]
-softfloat-wrapper = "0.3.3"
+[dependencies.softfloat-wrapper]
+git = "https://github.com/tacanslabs/softfloat-sys.git"
 ```
 
 ## Example
@@ -33,24 +39,19 @@ fn main() {
 }
 ```
 
-## Feature
+## Features
 
-Some architectures are supported:
+Compared to 0.3.x, architecture specializations are chosen through target triple.
+Architectures properly supported ATM:
 
-* 8086
-* 8086-SSE (default)
-* ARM-VFPv2
-* ARM-VFPv2-DefaultNaN
-* RISCV
+* Linux x86-64
+* Wasm32
 
-You can specify architecture through feature like below:
+Actual feature gates:
 
-```Cargo.toml
-[dependencies.softfloat-wrapper]
-version = "0.3.3"
-default-features = false
-features = ["riscv"]
-```
+* `concordium` - Tweaks to make softfloat usable with `concordium` blockchain, where hardware floats are not supported. Disables conversions from and to platform float types (VM doesn't even have instructions for such values)
+and `F128` type. The latter is disabled due to ABI issues when building for `Wasm32`.
+Also implements traits `Serial` and `Deserial` for concordium-std.
 
 ## License
 

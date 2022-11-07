@@ -1,30 +1,160 @@
-use crate::{Float, RoundingMode, F128, F16, F32};
+use crate::{RoundingMode, SoftFloat, DEFAULT_ROUNDING_MODE, F16, F32};
+use num_traits::One;
 use softfloat_sys::float64_t;
-use std::borrow::Borrow;
+use std::{
+    borrow::Borrow,
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign},
+};
 
 /// standard 64-bit float
 #[derive(Copy, Clone, Debug)]
 pub struct F64(float64_t);
 
-impl F64 {
-    /// Converts primitive `f32` to `F64`
-    pub fn from_f32(v: f32) -> Self {
-        F32::from_bits(v.to_bits()).to_f64(RoundingMode::TiesToEven)
-    }
-
-    /// Converts primitive `f64` to `F64`
-    pub fn from_f64(v: f64) -> Self {
-        Self::from_bits(v.to_bits())
+#[cfg(feature = "concordium")]
+impl concordium_std::Serial for F64 {
+    fn serial<W: concordium_std::Write>(&self, out: &mut W) -> Result<(), W::Err> {
+        self.to_bits().serial(out)
     }
 }
 
-impl Float for F64 {
+#[cfg(feature = "concordium")]
+impl concordium_std::Deserial for F64 {
+    fn deserial<R: concordium_std::Read>(source: &mut R) -> concordium_std::ParseResult<Self> {
+        Ok(F64::from_bits(u64::deserial(source)?))
+    }
+}
+
+impl Default for F64 {
+    fn default() -> Self {
+        num_traits::Zero::zero()
+    }
+}
+
+impl num_traits::Zero for F64 {
+    fn zero() -> Self {
+        SoftFloat::positive_zero()
+    }
+
+    fn is_zero(&self) -> bool {
+        SoftFloat::is_zero(self)
+    }
+}
+
+impl One for F64 {
+    fn one() -> Self {
+        SoftFloat::from_i8(1, DEFAULT_ROUNDING_MODE)
+    }
+}
+
+impl Neg for F64 {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        SoftFloat::neg(&self)
+    }
+}
+
+impl Add for F64 {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        SoftFloat::add(&self, rhs, DEFAULT_ROUNDING_MODE)
+    }
+}
+
+impl AddAssign for F64 {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
+    }
+}
+
+impl Sub for F64 {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        SoftFloat::sub(&self, rhs, DEFAULT_ROUNDING_MODE)
+    }
+}
+
+impl SubAssign for F64 {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs;
+    }
+}
+
+impl Mul for F64 {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        SoftFloat::mul(&self, rhs, DEFAULT_ROUNDING_MODE)
+    }
+}
+
+impl MulAssign for F64 {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = *self * rhs;
+    }
+}
+
+impl Div for F64 {
+    type Output = Self;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        SoftFloat::div(&self, rhs, DEFAULT_ROUNDING_MODE)
+    }
+}
+
+impl DivAssign for F64 {
+    fn div_assign(&mut self, rhs: Self) {
+        *self = *self / rhs;
+    }
+}
+
+impl Rem for F64 {
+    type Output = Self;
+
+    fn rem(self, rhs: Self) -> Self::Output {
+        SoftFloat::rem(&self, rhs, DEFAULT_ROUNDING_MODE)
+    }
+}
+
+impl RemAssign for F64 {
+    fn rem_assign(&mut self, rhs: Self) {
+        *self = *self % rhs;
+    }
+}
+
+impl PartialEq for F64 {
+    fn eq(&self, other: &Self) -> bool {
+        SoftFloat::eq(self, other)
+    }
+}
+
+impl PartialOrd for F64 {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        SoftFloat::compare(self, other)
+    }
+}
+
+impl SoftFloat for F64 {
     type Payload = u64;
 
-    const EXPONENT_BIT: Self::Payload = 0x7ff;
-    const FRACTION_BIT: Self::Payload = 0xf_ffff_ffff_ffff;
-    const SIGN_POS: usize = 63;
-    const EXPONENT_POS: usize = 52;
+    const MANTISSA_MASK: Self::Payload = 0xf_ffff_ffff_ffff;
+    const EXPONENT_MASK: Self::Payload = 0x7ff;
+    const MANTISSA_BITS: usize = 52;
+    const EXPONENT_BITS: usize = 11;
+    const SIGN_OFFSET: usize = 63;
+    const EXPONENT_OFFSET: usize = 52;
+
+    #[cfg(not(feature = "concordium"))]
+    fn from_native_f32(v: f32) -> Self {
+        F32::from_bits(v.to_bits()).to_f64(RoundingMode::TiesToEven)
+    }
+
+    #[cfg(not(feature = "concordium"))]
+    fn from_native_f64(v: f64) -> Self {
+        Self::from_bits(v.to_bits())
+    }
 
     #[inline]
     fn set_payload(&mut self, x: Self::Payload) {
@@ -176,13 +306,14 @@ impl Float for F64 {
         Self::from_bits(self.to_bits())
     }
 
-    fn to_f128(&self, rnd: RoundingMode) -> F128 {
+    #[cfg(not(feature = "concordium"))]
+    fn to_f128(&self, rnd: RoundingMode) -> super::F128 {
         rnd.set();
         let ret = unsafe { softfloat_sys::f64_to_f128(self.0) };
         let mut v = 0u128;
         v |= ret.v[0] as u128;
         v |= (ret.v[1] as u128) << 64;
-        F128::from_bits(v)
+        super::F128::from_bits(v)
     }
 
     fn round_to_integral(&self, rnd: RoundingMode) -> Self {
@@ -203,7 +334,7 @@ mod tests {
         let b = 0x76546410aaaaaaaa;
         let a0 = F64::from_bits(a);
         let b0 = F64::from_bits(b);
-        let d0 = a0.add(b0, RoundingMode::TiesToEven);
+        let d0 = SoftFloat::add(&a0, b0, RoundingMode::TiesToEven);
         let a1 = simple_soft_float::F64::from_bits(a);
         let b1 = simple_soft_float::F64::from_bits(b);
         let d1 = a1.add(&b1, Some(simple_soft_float::RoundingMode::TiesToEven), None);
@@ -216,7 +347,7 @@ mod tests {
         let b = 0x76546410aaaaaaaa;
         let a0 = F64::from_bits(a);
         let b0 = F64::from_bits(b);
-        let d0 = a0.sub(b0, RoundingMode::TiesToEven);
+        let d0 = SoftFloat::sub(&a0, b0, RoundingMode::TiesToEven);
         let a1 = simple_soft_float::F64::from_bits(a);
         let b1 = simple_soft_float::F64::from_bits(b);
         let d1 = a1.sub(&b1, Some(simple_soft_float::RoundingMode::TiesToEven), None);
@@ -229,7 +360,7 @@ mod tests {
         let b = 0x76546410aaaaaaaa;
         let a0 = F64::from_bits(a);
         let b0 = F64::from_bits(b);
-        let d0 = a0.mul(b0, RoundingMode::TiesToEven);
+        let d0 = SoftFloat::mul(&a0, b0, RoundingMode::TiesToEven);
         let a1 = simple_soft_float::F64::from_bits(a);
         let b1 = simple_soft_float::F64::from_bits(b);
         let d1 = a1.mul(&b1, Some(simple_soft_float::RoundingMode::TiesToEven), None);
@@ -263,7 +394,7 @@ mod tests {
         let b = 0x12346410aaaaaaaa;
         let a0 = F64::from_bits(a);
         let b0 = F64::from_bits(b);
-        let d0 = a0.div(b0, RoundingMode::TiesToEven);
+        let d0 = SoftFloat::div(&a0, b0, RoundingMode::TiesToEven);
         let a1 = simple_soft_float::F64::from_bits(a);
         let b1 = simple_soft_float::F64::from_bits(b);
         let d1 = a1.div(&b1, Some(simple_soft_float::RoundingMode::TiesToEven), None);
@@ -276,7 +407,7 @@ mod tests {
         let b = 0x12346410aaaaaaaa;
         let a0 = F64::from_bits(a);
         let b0 = F64::from_bits(b);
-        let d0 = a0.rem(b0, RoundingMode::TiesToEven);
+        let d0 = SoftFloat::rem(&a0, b0, RoundingMode::TiesToEven);
         let a1 = simple_soft_float::F64::from_bits(a);
         let b1 = simple_soft_float::F64::from_bits(b);
         let d1 = a1.ieee754_remainder(&b1, Some(simple_soft_float::RoundingMode::TiesToEven), None);
@@ -320,13 +451,13 @@ mod tests {
 
         let mut flag = ExceptionFlags::default();
         flag.set();
-        assert_eq!(a.eq(a), false);
+        assert_eq!(a == a, false);
         flag.get();
         assert_eq!(flag.is_invalid(), true);
 
         let mut flag = ExceptionFlags::default();
         flag.set();
-        assert_eq!(b.eq(b), false);
+        assert_eq!(b == b, false);
         flag.get();
         assert_eq!(flag.is_invalid(), false);
 
@@ -343,15 +474,17 @@ mod tests {
         assert_eq!(flag.is_invalid(), true);
     }
 
+    #[cfg(not(feature = "concordium"))]
     #[test]
     fn from_f32() {
-        let a = F64::from_f32(0.1);
+        let a = F64::from_native_f32(0.1);
         assert_eq!(a.to_bits(), 0x3fb99999a0000000);
     }
 
+    #[cfg(not(feature = "concordium"))]
     #[test]
     fn from_f64() {
-        let a = F64::from_f64(0.1);
+        let a = F64::from_native_f64(0.1);
         assert_eq!(a.to_bits(), 0x3fb999999999999a);
     }
 }
