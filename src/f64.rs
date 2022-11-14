@@ -11,6 +11,13 @@ use std::{
 pub struct F64(float64_t);
 
 #[cfg(feature = "concordium")]
+impl concordium_std::schema::SchemaType for F64 {
+    fn get_type() -> concordium_std::schema::Type {
+        concordium_std::schema::Type::U64
+    }
+}
+
+#[cfg(feature = "concordium")]
 impl concordium_std::Serial for F64 {
     fn serial<W: concordium_std::Write>(&self, out: &mut W) -> Result<(), W::Err> {
         self.to_bits().serial(out)
