@@ -23,9 +23,9 @@ impl concordium_std::Serial for F64 {
 #[cfg(feature = "concordium")]
 impl concordium_std::Deserial for F64 {
     fn deserial<R: concordium_std::Read>(source: &mut R) -> concordium_std::ParseResult<Self> {
-        Ok(Self::from_bits(<Self as crate::SoftFloat>::Payload::deserial(
-            source,
-        )?))
+        Ok(Self::from_bits(
+            <Self as crate::SoftFloat>::Payload::deserial(source)?,
+        ))
     }
 }
 
