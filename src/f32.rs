@@ -6,7 +6,140 @@ use std::borrow::Borrow;
 #[derive(Copy, Clone, Debug)]
 pub struct F32(float32_t);
 
-impl F32 {}
+#[cfg(feature = "concordium")]
+impl concordium_std::schema::SchemaType for F32 {
+    fn get_type() -> concordium_std::schema::Type {
+        <<Self as crate::SoftFloat>::Payload as concordium_std::schema::SchemaType>::get_type()
+    }
+}
+
+#[cfg(feature = "concordium")]
+impl concordium_std::Serial for F32 {
+    fn serial<W: concordium_std::Write>(&self, out: &mut W) -> Result<(), W::Err> {
+        self.to_bits().serial(out)
+    }
+}
+
+#[cfg(feature = "concordium")]
+impl concordium_std::Deserial for F32 {
+    fn deserial<R: concordium_std::Read>(source: &mut R) -> concordium_std::ParseResult<Self> {
+        Ok(Self::from_bits(<Self as crate::SoftFloat>::Payload::deserial(
+            source,
+        )?))
+    }
+}
+
+impl Default for F32 {
+    fn default() -> Self {
+        num_traits::Zero::zero()
+    }
+}
+
+impl num_traits::Zero for F32 {
+    fn zero() -> Self {
+        crate::SoftFloat::positive_zero()
+    }
+
+    fn is_zero(&self) -> bool {
+        crate::SoftFloat::is_zero(self)
+    }
+}
+
+impl num_traits::One for F32 {
+    fn one() -> Self {
+        crate::SoftFloat::from_i8(1, crate::DEFAULT_ROUNDING_MODE)
+    }
+}
+
+impl std::ops::Neg for F32 {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        crate::SoftFloat::neg(&self)
+    }
+}
+
+impl std::ops::Add for F32 {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        crate::SoftFloat::add(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
+    }
+}
+
+impl std::ops::AddAssign for F32 {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
+    }
+}
+
+impl std::ops::Sub for F32 {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        crate::SoftFloat::sub(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
+    }
+}
+
+impl std::ops::SubAssign for F32 {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs;
+    }
+}
+
+impl std::ops::Mul for F32 {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        crate::SoftFloat::mul(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
+    }
+}
+
+impl std::ops::MulAssign for F32 {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = *self * rhs;
+    }
+}
+
+impl std::ops::Div for F32 {
+    type Output = Self;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        crate::SoftFloat::div(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
+    }
+}
+
+impl std::ops::DivAssign for F32 {
+    fn div_assign(&mut self, rhs: Self) {
+        *self = *self / rhs;
+    }
+}
+
+impl std::ops::Rem for F32 {
+    type Output = Self;
+
+    fn rem(self, rhs: Self) -> Self::Output {
+        crate::SoftFloat::rem(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
+    }
+}
+
+impl std::ops::RemAssign for F32 {
+    fn rem_assign(&mut self, rhs: Self) {
+        *self = *self % rhs;
+    }
+}
+
+impl std::cmp::PartialEq for F32 {
+    fn eq(&self, other: &Self) -> bool {
+        crate::SoftFloat::eq(self, other)
+    }
+}
+
+impl std::cmp::PartialOrd for F32 {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        crate::SoftFloat::compare(self, other)
+    }
+}
 
 impl SoftFloat for F32 {
     type Payload = u32;
@@ -206,7 +339,7 @@ mod tests {
         let b = 0x76543210;
         let a0 = F32::from_bits(a);
         let b0 = F32::from_bits(b);
-        let d0 = a0.add(b0, RoundingMode::TiesToEven);
+        let d0 = SoftFloat::add(&a0, b0, RoundingMode::TiesToEven);
         let a1 = simple_soft_float::F32::from_bits(a);
         let b1 = simple_soft_float::F32::from_bits(b);
         let d1 = a1.add(&b1, Some(simple_soft_float::RoundingMode::TiesToEven), None);
@@ -219,7 +352,7 @@ mod tests {
         let b = 0x76543210;
         let a0 = F32::from_bits(a);
         let b0 = F32::from_bits(b);
-        let d0 = a0.sub(b0, RoundingMode::TiesToEven);
+        let d0 = SoftFloat::sub(&a0, b0, RoundingMode::TiesToEven);
         let a1 = simple_soft_float::F32::from_bits(a);
         let b1 = simple_soft_float::F32::from_bits(b);
         let d1 = a1.sub(&b1, Some(simple_soft_float::RoundingMode::TiesToEven), None);
@@ -232,7 +365,7 @@ mod tests {
         let b = 0x76543210;
         let a0 = F32::from_bits(a);
         let b0 = F32::from_bits(b);
-        let d0 = a0.mul(b0, RoundingMode::TiesToEven);
+        let d0 = SoftFloat::mul(&a0, b0, RoundingMode::TiesToEven);
         let a1 = simple_soft_float::F32::from_bits(a);
         let b1 = simple_soft_float::F32::from_bits(b);
         let d1 = a1.mul(&b1, Some(simple_soft_float::RoundingMode::TiesToEven), None);
@@ -266,7 +399,7 @@ mod tests {
         let b = 0x12343210;
         let a0 = F32::from_bits(a);
         let b0 = F32::from_bits(b);
-        let d0 = a0.div(b0, RoundingMode::TiesToEven);
+        let d0 = SoftFloat::div(&a0, b0, RoundingMode::TiesToEven);
         let a1 = simple_soft_float::F32::from_bits(a);
         let b1 = simple_soft_float::F32::from_bits(b);
         let d1 = a1.div(&b1, Some(simple_soft_float::RoundingMode::TiesToEven), None);
@@ -279,7 +412,7 @@ mod tests {
         let b = 0x12343210;
         let a0 = F32::from_bits(a);
         let b0 = F32::from_bits(b);
-        let d0 = a0.rem(b0, RoundingMode::TiesToEven);
+        let d0 = SoftFloat::rem(&a0, b0, RoundingMode::TiesToEven);
         let a1 = simple_soft_float::F32::from_bits(a);
         let b1 = simple_soft_float::F32::from_bits(b);
         let d1 = a1.ieee754_remainder(&b1, Some(simple_soft_float::RoundingMode::TiesToEven), None);
@@ -323,13 +456,13 @@ mod tests {
 
         let mut flag = ExceptionFlags::default();
         flag.set();
-        assert_eq!(a.eq(a), false);
+        assert_eq!(SoftFloat::eq(&a, a), false);
         flag.get();
         assert_eq!(flag.is_invalid(), true);
 
         let mut flag = ExceptionFlags::default();
         flag.set();
-        assert_eq!(b.eq(b), false);
+        assert_eq!(SoftFloat::eq(&b, b), false);
         flag.get();
         assert_eq!(flag.is_invalid(), false);
 

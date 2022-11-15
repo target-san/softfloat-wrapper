@@ -1,10 +1,6 @@
-use crate::{RoundingMode, SoftFloat, DEFAULT_ROUNDING_MODE, F16, F32};
-use num_traits::One;
+use crate::{RoundingMode, SoftFloat, F16, F32};
 use softfloat_sys::float64_t;
-use std::{
-    borrow::Borrow,
-    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign},
-};
+use std::borrow::Borrow;
 
 /// standard 64-bit float
 #[derive(Copy, Clone, Debug)]
@@ -13,7 +9,7 @@ pub struct F64(float64_t);
 #[cfg(feature = "concordium")]
 impl concordium_std::schema::SchemaType for F64 {
     fn get_type() -> concordium_std::schema::Type {
-        concordium_std::schema::Type::U64
+        <<Self as crate::SoftFloat>::Payload as concordium_std::schema::SchemaType>::get_type()
     }
 }
 
@@ -27,7 +23,9 @@ impl concordium_std::Serial for F64 {
 #[cfg(feature = "concordium")]
 impl concordium_std::Deserial for F64 {
     fn deserial<R: concordium_std::Read>(source: &mut R) -> concordium_std::ParseResult<Self> {
-        Ok(F64::from_bits(u64::deserial(source)?))
+        Ok(Self::from_bits(<Self as crate::SoftFloat>::Payload::deserial(
+            source,
+        )?))
     }
 }
 
@@ -39,107 +37,107 @@ impl Default for F64 {
 
 impl num_traits::Zero for F64 {
     fn zero() -> Self {
-        SoftFloat::positive_zero()
+        crate::SoftFloat::positive_zero()
     }
 
     fn is_zero(&self) -> bool {
-        SoftFloat::is_zero(self)
+        crate::SoftFloat::is_zero(self)
     }
 }
 
-impl One for F64 {
+impl num_traits::One for F64 {
     fn one() -> Self {
-        SoftFloat::from_i8(1, DEFAULT_ROUNDING_MODE)
+        crate::SoftFloat::from_i8(1, crate::DEFAULT_ROUNDING_MODE)
     }
 }
 
-impl Neg for F64 {
+impl std::ops::Neg for F64 {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
-        SoftFloat::neg(&self)
+        crate::SoftFloat::neg(&self)
     }
 }
 
-impl Add for F64 {
+impl std::ops::Add for F64 {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        SoftFloat::add(&self, rhs, DEFAULT_ROUNDING_MODE)
+        crate::SoftFloat::add(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
     }
 }
 
-impl AddAssign for F64 {
+impl std::ops::AddAssign for F64 {
     fn add_assign(&mut self, rhs: Self) {
         *self = *self + rhs;
     }
 }
 
-impl Sub for F64 {
+impl std::ops::Sub for F64 {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        SoftFloat::sub(&self, rhs, DEFAULT_ROUNDING_MODE)
+        crate::SoftFloat::sub(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
     }
 }
 
-impl SubAssign for F64 {
+impl std::ops::SubAssign for F64 {
     fn sub_assign(&mut self, rhs: Self) {
         *self = *self - rhs;
     }
 }
 
-impl Mul for F64 {
+impl std::ops::Mul for F64 {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        SoftFloat::mul(&self, rhs, DEFAULT_ROUNDING_MODE)
+        crate::SoftFloat::mul(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
     }
 }
 
-impl MulAssign for F64 {
+impl std::ops::MulAssign for F64 {
     fn mul_assign(&mut self, rhs: Self) {
         *self = *self * rhs;
     }
 }
 
-impl Div for F64 {
+impl std::ops::Div for F64 {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self::Output {
-        SoftFloat::div(&self, rhs, DEFAULT_ROUNDING_MODE)
+        crate::SoftFloat::div(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
     }
 }
 
-impl DivAssign for F64 {
+impl std::ops::DivAssign for F64 {
     fn div_assign(&mut self, rhs: Self) {
         *self = *self / rhs;
     }
 }
 
-impl Rem for F64 {
+impl std::ops::Rem for F64 {
     type Output = Self;
 
     fn rem(self, rhs: Self) -> Self::Output {
-        SoftFloat::rem(&self, rhs, DEFAULT_ROUNDING_MODE)
+        crate::SoftFloat::rem(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
     }
 }
 
-impl RemAssign for F64 {
+impl std::ops::RemAssign for F64 {
     fn rem_assign(&mut self, rhs: Self) {
         *self = *self % rhs;
     }
 }
 
-impl PartialEq for F64 {
+impl std::cmp::PartialEq for F64 {
     fn eq(&self, other: &Self) -> bool {
-        SoftFloat::eq(self, other)
+        crate::SoftFloat::eq(self, other)
     }
 }
 
-impl PartialOrd for F64 {
+impl std::cmp::PartialOrd for F64 {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        SoftFloat::compare(self, other)
+        crate::SoftFloat::compare(self, other)
     }
 }
 

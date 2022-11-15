@@ -6,6 +6,141 @@ use std::borrow::Borrow;
 #[derive(Copy, Clone, Debug)]
 pub struct F16(float16_t);
 
+#[cfg(feature = "concordium")]
+impl concordium_std::schema::SchemaType for F16 {
+    fn get_type() -> concordium_std::schema::Type {
+        <<Self as crate::SoftFloat>::Payload as concordium_std::schema::SchemaType>::get_type()
+    }
+}
+
+#[cfg(feature = "concordium")]
+impl concordium_std::Serial for F16 {
+    fn serial<W: concordium_std::Write>(&self, out: &mut W) -> Result<(), W::Err> {
+        self.to_bits().serial(out)
+    }
+}
+
+#[cfg(feature = "concordium")]
+impl concordium_std::Deserial for F16 {
+    fn deserial<R: concordium_std::Read>(source: &mut R) -> concordium_std::ParseResult<Self> {
+        Ok(Self::from_bits(<Self as crate::SoftFloat>::Payload::deserial(
+            source,
+        )?))
+    }
+}
+
+impl Default for F16 {
+    fn default() -> Self {
+        num_traits::Zero::zero()
+    }
+}
+
+impl num_traits::Zero for F16 {
+    fn zero() -> Self {
+        crate::SoftFloat::positive_zero()
+    }
+
+    fn is_zero(&self) -> bool {
+        crate::SoftFloat::is_zero(self)
+    }
+}
+
+impl num_traits::One for F16 {
+    fn one() -> Self {
+        crate::SoftFloat::from_i8(1, crate::DEFAULT_ROUNDING_MODE)
+    }
+}
+
+impl std::ops::Neg for F16 {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        crate::SoftFloat::neg(&self)
+    }
+}
+
+impl std::ops::Add for F16 {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        crate::SoftFloat::add(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
+    }
+}
+
+impl std::ops::AddAssign for F16 {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
+    }
+}
+
+impl std::ops::Sub for F16 {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        crate::SoftFloat::sub(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
+    }
+}
+
+impl std::ops::SubAssign for F16 {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs;
+    }
+}
+
+impl std::ops::Mul for F16 {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        crate::SoftFloat::mul(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
+    }
+}
+
+impl std::ops::MulAssign for F16 {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = *self * rhs;
+    }
+}
+
+impl std::ops::Div for F16 {
+    type Output = Self;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        crate::SoftFloat::div(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
+    }
+}
+
+impl std::ops::DivAssign for F16 {
+    fn div_assign(&mut self, rhs: Self) {
+        *self = *self / rhs;
+    }
+}
+
+impl std::ops::Rem for F16 {
+    type Output = Self;
+
+    fn rem(self, rhs: Self) -> Self::Output {
+        crate::SoftFloat::rem(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
+    }
+}
+
+impl std::ops::RemAssign for F16 {
+    fn rem_assign(&mut self, rhs: Self) {
+        *self = *self % rhs;
+    }
+}
+
+impl std::cmp::PartialEq for F16 {
+    fn eq(&self, other: &Self) -> bool {
+        crate::SoftFloat::eq(self, other)
+    }
+}
+
+impl std::cmp::PartialOrd for F16 {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        crate::SoftFloat::compare(self, other)
+    }
+}
+
 impl SoftFloat for F16 {
     type Payload = u16;
 
@@ -321,13 +456,13 @@ mod tests {
 
         let mut flag = ExceptionFlags::default();
         flag.set();
-        assert_eq!(a.eq(a), false);
+        assert_eq!(SoftFloat::eq(&a, a), false);
         flag.get();
         assert_eq!(flag.is_invalid(), true);
 
         let mut flag = ExceptionFlags::default();
         flag.set();
-        assert_eq!(b.eq(b), false);
+        assert_eq!(SoftFloat::eq(&b, b), false);
         flag.get();
         assert_eq!(flag.is_invalid(), false);
 
