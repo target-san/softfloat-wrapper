@@ -325,13 +325,13 @@ mod tests {
 
         let mut flag = ExceptionFlags::default();
         flag.set();
-        assert_eq!(a.eq(a), false);
+        assert_eq!(SoftFloat::eq(&a, a), false);
         flag.get();
         assert_eq!(flag.is_invalid(), true);
 
         let mut flag = ExceptionFlags::default();
         flag.set();
-        assert_eq!(b.eq(b), false);
+        assert_eq!(SoftFloat::eq(&b, b), false);
         flag.get();
         assert_eq!(flag.is_invalid(), false);
 

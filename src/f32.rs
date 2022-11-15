@@ -6,8 +6,6 @@ use std::borrow::Borrow;
 #[derive(Copy, Clone, Debug)]
 pub struct F32(float32_t);
 
-impl F32 {}
-
 impl SoftFloat for F32 {
     type Payload = u32;
 
@@ -206,7 +204,7 @@ mod tests {
         let b = 0x76543210;
         let a0 = F32::from_bits(a);
         let b0 = F32::from_bits(b);
-        let d0 = a0.add(b0, RoundingMode::TiesToEven);
+        let d0 = SoftFloat::add(&a0, b0, RoundingMode::TiesToEven);
         let a1 = simple_soft_float::F32::from_bits(a);
         let b1 = simple_soft_float::F32::from_bits(b);
         let d1 = a1.add(&b1, Some(simple_soft_float::RoundingMode::TiesToEven), None);
@@ -219,7 +217,7 @@ mod tests {
         let b = 0x76543210;
         let a0 = F32::from_bits(a);
         let b0 = F32::from_bits(b);
-        let d0 = a0.sub(b0, RoundingMode::TiesToEven);
+        let d0 = SoftFloat::sub(&a0, b0, RoundingMode::TiesToEven);
         let a1 = simple_soft_float::F32::from_bits(a);
         let b1 = simple_soft_float::F32::from_bits(b);
         let d1 = a1.sub(&b1, Some(simple_soft_float::RoundingMode::TiesToEven), None);
@@ -232,7 +230,7 @@ mod tests {
         let b = 0x76543210;
         let a0 = F32::from_bits(a);
         let b0 = F32::from_bits(b);
-        let d0 = a0.mul(b0, RoundingMode::TiesToEven);
+        let d0 = SoftFloat::mul(&a0, b0, RoundingMode::TiesToEven);
         let a1 = simple_soft_float::F32::from_bits(a);
         let b1 = simple_soft_float::F32::from_bits(b);
         let d1 = a1.mul(&b1, Some(simple_soft_float::RoundingMode::TiesToEven), None);
@@ -266,7 +264,7 @@ mod tests {
         let b = 0x12343210;
         let a0 = F32::from_bits(a);
         let b0 = F32::from_bits(b);
-        let d0 = a0.div(b0, RoundingMode::TiesToEven);
+        let d0 = SoftFloat::div(&a0, b0, RoundingMode::TiesToEven);
         let a1 = simple_soft_float::F32::from_bits(a);
         let b1 = simple_soft_float::F32::from_bits(b);
         let d1 = a1.div(&b1, Some(simple_soft_float::RoundingMode::TiesToEven), None);
@@ -279,7 +277,7 @@ mod tests {
         let b = 0x12343210;
         let a0 = F32::from_bits(a);
         let b0 = F32::from_bits(b);
-        let d0 = a0.rem(b0, RoundingMode::TiesToEven);
+        let d0 = SoftFloat::rem(&a0, b0, RoundingMode::TiesToEven);
         let a1 = simple_soft_float::F32::from_bits(a);
         let b1 = simple_soft_float::F32::from_bits(b);
         let d1 = a1.ieee754_remainder(&b1, Some(simple_soft_float::RoundingMode::TiesToEven), None);
@@ -323,13 +321,13 @@ mod tests {
 
         let mut flag = ExceptionFlags::default();
         flag.set();
-        assert_eq!(a.eq(a), false);
+        assert_eq!(SoftFloat::eq(&a, a), false);
         flag.get();
         assert_eq!(flag.is_invalid(), true);
 
         let mut flag = ExceptionFlags::default();
         flag.set();
-        assert_eq!(b.eq(b), false);
+        assert_eq!(SoftFloat::eq(&b, b), false);
         flag.get();
         assert_eq!(flag.is_invalid(), false);
 
