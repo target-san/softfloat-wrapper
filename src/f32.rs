@@ -16,12 +16,12 @@ impl SoftFloat for F32 {
     const SIGN_OFFSET: usize = 31;
     const EXPONENT_OFFSET: usize = 23;
 
-    #[cfg(not(feature = "concordium"))]
+    #[cfg(feature = "native-float")]
     fn from_native_f32(v: f32) -> Self {
         Self::from_bits(v.to_bits())
     }
 
-    #[cfg(not(feature = "concordium"))]
+    #[cfg(feature = "native-float")]
     fn from_native_f64(v: f64) -> Self {
         F64::from_bits(v.to_bits()).to_f32(RoundingMode::TiesToEven)
     }
@@ -176,7 +176,7 @@ impl SoftFloat for F32 {
         F64::from_bits(ret.v)
     }
 
-    #[cfg(not(feature = "concordium"))]
+    #[cfg(feature = "f128")]
     fn to_f128(&self, rnd: RoundingMode) -> super::F128 {
         rnd.set();
         let ret = unsafe { softfloat_sys::f32_to_f128(self.0) };
@@ -344,14 +344,14 @@ mod tests {
         assert_eq!(flag.is_invalid(), true);
     }
 
-    #[cfg(not(feature = "concordium"))]
+    #[cfg(feature = "native-float")]
     #[test]
     fn from_f32() {
         let a = F32::from_native_f32(0.1);
         assert_eq!(a.to_bits(), 0x3dcccccd);
     }
 
-    #[cfg(not(feature = "concordium"))]
+    #[cfg(feature = "native-float")]
     #[test]
     fn from_f64() {
         let a = F32::from_native_f64(0.1);

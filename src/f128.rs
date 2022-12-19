@@ -16,12 +16,12 @@ impl SoftFloat for F128 {
     const EXPONENT_OFFSET: usize = 112;
     const SIGN_OFFSET: usize = 127;
 
-    #[cfg(not(feature = "concordium"))]
+    #[cfg(feature = "native-float")]
     fn from_native_f32(v: f32) -> Self {
         F32::from_bits(v.to_bits()).to_f128(RoundingMode::TiesToEven)
     }
 
-    #[cfg(not(feature = "concordium"))]
+    #[cfg(feature = "native-float")]
     fn from_native_f64(v: f64) -> Self {
         F64::from_bits(v.to_bits()).to_f128(RoundingMode::TiesToEven)
     }
@@ -348,14 +348,14 @@ mod tests {
         assert_eq!(flag.is_invalid(), true);
     }
 
-    #[cfg(not(feature = "concordium"))]
+    #[cfg(feature = "native-float")]
     #[test]
     fn from_f32() {
         let a = F128::from_native_f32(0.1);
         assert_eq!(a.to_bits(), 0x3ffb99999a0000000000000000000000);
     }
 
-    #[cfg(not(feature = "concordium"))]
+    #[cfg(feature = "native-float")]
     #[test]
     fn from_f64() {
         let a = F128::from_native_f64(0.1);

@@ -21,12 +21,12 @@
 //! }
 //! ```
 
-#[cfg(not(feature = "concordium"))]
+#[cfg(feature = "f128")]
 mod f128;
 mod f16;
 mod f32;
 mod f64;
-#[cfg(not(feature = "concordium"))]
+#[cfg(feature = "f128")]
 pub use crate::f128::F128;
 pub use crate::f16::F16;
 pub use crate::f32::F32;
@@ -184,10 +184,10 @@ pub trait SoftFloat {
     /// Exponent bits offset
     const EXPONENT_OFFSET: usize;
 
-    #[cfg(not(feature = "concordium"))]
+    #[cfg(feature = "native-float")]
     fn from_native_f32(value: f32) -> Self;
 
-    #[cfg(not(feature = "concordium"))]
+    #[cfg(feature = "native-float")]
     fn from_native_f64(value: f64) -> Self;
 
     fn set_payload(&mut self, x: Self::Payload);
@@ -249,7 +249,7 @@ pub trait SoftFloat {
 
     fn to_f64(&self, rnd: RoundingMode) -> F64;
 
-    #[cfg(not(feature = "concordium"))]
+    #[cfg(feature = "f128")]
     fn to_f128(&self, rnd: RoundingMode) -> F128;
 
     fn round_to_integral(&self, rnd: RoundingMode) -> Self;
@@ -492,29 +492,6 @@ pub trait SoftFloat {
 
 macro_rules! impl_ops {
     ($type:ident) => {
-        #[cfg(feature = "concordium")]
-        impl concordium_std::schema::SchemaType for $type {
-            fn get_type() -> concordium_std::schema::Type {
-                <<Self as crate::SoftFloat>::Payload as concordium_std::schema::SchemaType>::get_type()
-            }
-        }
-
-        #[cfg(feature = "concordium")]
-        impl concordium_std::Serial for $type {
-            fn serial<W: concordium_std::Write>(&self, out: &mut W) -> Result<(), W::Err> {
-                self.to_bits().serial(out)
-            }
-        }
-
-        #[cfg(feature = "concordium")]
-        impl concordium_std::Deserial for $type {
-            fn deserial<R: concordium_std::Read>(source: &mut R) -> concordium_std::ParseResult<Self> {
-                Ok(Self::from_bits(
-                    <Self as crate::SoftFloat>::Payload::deserial(source)?,
-                ))
-            }
-        }
-
         impl Default for $type {
             fn default() -> Self {
                 num_traits::Zero::zero()
@@ -632,7 +609,7 @@ macro_rules! impl_ops {
 impl_ops!(F16);
 impl_ops!(F32);
 impl_ops!(F64);
-#[cfg(not(feature = "concordium"))]
+#[cfg(feature = "f128")]
 impl_ops!(F128);
 
 #[cfg(test)]
