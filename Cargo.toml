@@ -13,7 +13,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
+# Enables conversion from and into native float types
 native-float = []
+# Enables soft F128 type
 f128 = []
 
 [dependencies]

@@ -49,9 +49,8 @@ Architectures properly supported ATM:
 
 Actual feature gates:
 
-* `concordium` - Tweaks to make softfloat usable with `concordium` blockchain, where hardware floats are not supported. Disables conversions from and to platform float types (VM doesn't even have instructions for such values)
-and `F128` type. The latter is disabled due to ABI issues when building for `Wasm32`.
-Also implements traits `Serial` and `Deserial` for concordium-std.
+* `native-float` - enables conversions from and to native floating-point types
+* `f128` - enables quad-precision `F128` type
 
 ## License
 
