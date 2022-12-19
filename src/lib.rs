@@ -339,79 +339,65 @@ pub trait SoftFloat {
     }
 
     #[inline]
-    fn is_positive_zero(&self) -> bool {
-        self.is_positive()
-            && self.exponent() == Self::Payload::zero()
-            && self.mantissa() == Self::Payload::zero()
-    }
-
-    #[inline]
-    fn is_positive_subnormal(&self) -> bool {
-        self.is_positive()
-            && self.exponent() == Self::Payload::zero()
-            && self.mantissa() != Self::Payload::zero()
-    }
-
-    #[inline]
-    fn is_positive_normal(&self) -> bool {
-        self.is_positive()
-            && self.exponent() != Self::Payload::zero()
-            && self.exponent() != Self::EXPONENT_MASK
-    }
-
-    #[inline]
-    fn is_positive_infinity(&self) -> bool {
-        self.is_positive()
-            && self.exponent() == Self::EXPONENT_MASK
-            && self.mantissa() == Self::Payload::zero()
-    }
-
-    #[inline]
     fn is_negative(&self) -> bool {
-        self.sign() == Self::Payload::one()
+        !self.is_positive()
     }
 
     #[inline]
-    fn is_negative_zero(&self) -> bool {
-        self.is_negative()
-            && self.exponent() == Self::Payload::zero()
-            && self.mantissa() == Self::Payload::zero()
-    }
+    fn classify(&self) -> core::num::FpCategory {
+        use core::num::FpCategory;
+        let exp = self.exponent();
+        let mant = self.mantissa();
 
-    #[inline]
-    fn is_negative_subnormal(&self) -> bool {
-        self.is_negative()
-            && self.exponent() == Self::Payload::zero()
-            && self.mantissa() != Self::Payload::zero()
-    }
+        let zero = Self::Payload::zero();
 
-    #[inline]
-    fn is_negative_normal(&self) -> bool {
-        self.is_negative()
-            && self.exponent() != Self::Payload::zero()
-            && self.exponent() != Self::EXPONENT_MASK
-    }
-
-    #[inline]
-    fn is_negative_infinity(&self) -> bool {
-        self.is_negative()
-            && self.exponent() == Self::EXPONENT_MASK
-            && self.mantissa() == Self::Payload::zero()
+        if exp == zero && mant == zero {
+            FpCategory::Zero
+        }
+        else if exp == zero && mant != zero {
+            FpCategory::Subnormal
+        }
+        else if exp == Self::EXPONENT_MASK && mant == zero {
+            FpCategory::Infinite
+        }
+        else if exp == Self::EXPONENT_MASK && mant != zero {
+            FpCategory::Nan
+        }
+        else {
+            FpCategory::Normal
+        }
     }
 
     #[inline]
     fn is_nan(&self) -> bool {
-        self.exponent() == Self::EXPONENT_MASK && self.mantissa() != Self::Payload::zero()
+        self.classify() == core::num::FpCategory::Nan
+    }
+
+    #[inline]
+    fn is_infinity(&self) -> bool {
+        self.classify() == core::num::FpCategory::Infinite
     }
 
     #[inline]
     fn is_zero(&self) -> bool {
-        self.is_positive_zero() || self.is_negative_zero()
+        self.classify() == core::num::FpCategory::Zero
     }
 
     #[inline]
     fn is_subnormal(&self) -> bool {
-        self.exponent() == Self::Payload::zero()
+        self.classify() == core::num::FpCategory::Subnormal
+    }
+
+    #[inline]
+    fn is_normal(&self) -> bool {
+        self.classify() == core::num::FpCategory::Normal
+    }
+
+    #[inline]
+    fn is_finite(&self) -> bool {
+        use core::num::FpCategory;
+        let cat = self.classify();
+        cat != FpCategory::Infinite && cat != FpCategory::Nan
     }
 
     #[inline]
@@ -436,7 +422,7 @@ pub trait SoftFloat {
     }
 
     #[inline]
-    fn positive_infinity() -> Self
+    fn infinity() -> Self
     where
         Self: Sized,
     {
@@ -446,32 +432,11 @@ pub trait SoftFloat {
     }
 
     #[inline]
-    fn positive_zero() -> Self
+    fn zero() -> Self
     where
         Self: Sized,
     {
         let x = Self::from_bits(Self::Payload::zero());
-        x
-    }
-
-    #[inline]
-    fn negative_infinity() -> Self
-    where
-        Self: Sized,
-    {
-        let mut x = Self::from_bits(Self::Payload::zero());
-        x.set_sign(Self::Payload::one());
-        x.set_exponent(Self::EXPONENT_MASK);
-        x
-    }
-
-    #[inline]
-    fn negative_zero() -> Self
-    where
-        Self: Sized,
-    {
-        let mut x = Self::from_bits(Self::Payload::zero());
-        x.set_sign(Self::Payload::one());
         x
     }
 
