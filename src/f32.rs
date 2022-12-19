@@ -4,7 +4,18 @@ use std::borrow::Borrow;
 
 /// standard 32-bit float
 #[derive(Copy, Clone, Debug)]
+#[repr(transparent)]
 pub struct F32(float32_t);
+
+impl F32 {
+    pub const fn from_bits(v: u32) -> Self {
+        Self(float32_t { v })
+    }
+
+    pub const fn to_bits(&self) -> u32 {
+        self.0.v
+    }
+}
 
 impl SoftFloat for F32 {
     type Payload = u32;
@@ -33,12 +44,12 @@ impl SoftFloat for F32 {
 
     #[inline]
     fn from_bits(v: Self::Payload) -> Self {
-        Self(float32_t { v })
+        F32::from_bits(v)
     }
 
     #[inline]
     fn to_bits(&self) -> Self::Payload {
-        self.0.v
+        F32::to_bits(self)
     }
 
     #[inline]

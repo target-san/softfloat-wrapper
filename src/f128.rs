@@ -4,7 +4,21 @@ use std::borrow::Borrow;
 
 /// standard 128-bit float
 #[derive(Copy, Clone, Debug)]
+#[repr(transparent)]
 pub struct F128(float128_t);
+
+impl F128 {
+    pub const fn from_bits(v: u128) -> Self {
+        Self(float128_t { v: [v as u64, (v >> 64) as u64] })
+    }
+
+    pub const fn to_bits(&self) -> u128 {
+        let mut ret = 0u128;
+        ret |= self.0.v[0] as u128;
+        ret |= (self.0.v[1] as u128) << 64;
+        ret
+    }
+}
 
 impl SoftFloat for F128 {
     type Payload = u128;
@@ -34,16 +48,12 @@ impl SoftFloat for F128 {
 
     #[inline]
     fn from_bits(v: Self::Payload) -> Self {
-        let v = [v as u64, (v >> 64) as u64];
-        Self(float128_t { v })
+        F128::from_bits(v)
     }
 
     #[inline]
     fn to_bits(&self) -> Self::Payload {
-        let mut ret = 0u128;
-        ret |= self.0.v[0] as u128;
-        ret |= (self.0.v[1] as u128) << 64;
-        ret
+        F128::to_bits(self)
     }
 
     #[inline]

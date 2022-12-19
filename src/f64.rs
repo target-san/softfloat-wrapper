@@ -4,7 +4,18 @@ use std::borrow::Borrow;
 
 /// standard 64-bit float
 #[derive(Copy, Clone, Debug)]
+#[repr(transparent)]
 pub struct F64(float64_t);
+
+impl F64 {
+    pub const fn from_bits(v: u64) -> Self {
+        Self(float64_t { v })
+    }
+
+    pub const fn to_bits(&self) -> u64 {
+        self.0.v
+    }
+}
 
 impl SoftFloat for F64 {
     type Payload = u64;
@@ -33,12 +44,12 @@ impl SoftFloat for F64 {
 
     #[inline]
     fn from_bits(v: Self::Payload) -> Self {
-        Self(float64_t { v })
+        F64::from_bits(v)
     }
 
     #[inline]
     fn to_bits(&self) -> Self::Payload {
-        self.0.v
+        F64::to_bits(self)
     }
 
     #[inline]
