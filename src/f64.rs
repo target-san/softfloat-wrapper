@@ -321,13 +321,13 @@ mod tests {
 
         let mut flag = ExceptionFlags::default();
         flag.set();
-        assert_eq!(a == a, false);
+        assert_eq!(a.eq(a), false);
         flag.get();
         assert_eq!(flag.is_invalid(), true);
 
         let mut flag = ExceptionFlags::default();
         flag.set();
-        assert_eq!(b == b, false);
+        assert_eq!(b.eq(b), false);
         flag.get();
         assert_eq!(flag.is_invalid(), false);
 

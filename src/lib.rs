@@ -40,9 +40,6 @@ use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::fmt::{LowerHex, UpperHex};
 
-pub const DEFAULT_ROUNDING_MODE: RoundingMode = RoundingMode::TiesToAway;
-pub const DEFAULT_EXACT_MODE: bool = true;
-
 /// floating-point rounding mode defined by standard
 #[derive(Copy, Clone, Debug)]
 pub enum RoundingMode {
@@ -489,128 +486,6 @@ pub trait SoftFloat {
         x
     }
 }
-
-macro_rules! impl_ops {
-    ($type:ident) => {
-        impl Default for $type {
-            fn default() -> Self {
-                num_traits::Zero::zero()
-            }
-        }
-
-        impl num_traits::Zero for $type {
-            fn zero() -> Self {
-                crate::SoftFloat::positive_zero()
-            }
-
-            fn is_zero(&self) -> bool {
-                crate::SoftFloat::is_zero(self)
-            }
-        }
-
-        impl num_traits::One for $type {
-            fn one() -> Self {
-                crate::SoftFloat::from_i8(1, crate::DEFAULT_ROUNDING_MODE)
-            }
-        }
-
-        impl std::ops::Neg for $type {
-            type Output = Self;
-
-            fn neg(self) -> Self::Output {
-                crate::SoftFloat::neg(&self)
-            }
-        }
-
-        impl std::ops::Add for $type {
-            type Output = Self;
-
-            fn add(self, rhs: Self) -> Self::Output {
-                crate::SoftFloat::add(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
-            }
-        }
-
-        impl std::ops::AddAssign for $type {
-            fn add_assign(&mut self, rhs: Self) {
-                *self = *self + rhs;
-            }
-        }
-
-        impl std::ops::Sub for $type {
-            type Output = Self;
-
-            fn sub(self, rhs: Self) -> Self::Output {
-                crate::SoftFloat::sub(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
-            }
-        }
-
-        impl std::ops::SubAssign for $type {
-            fn sub_assign(&mut self, rhs: Self) {
-                *self = *self - rhs;
-            }
-        }
-
-        impl std::ops::Mul for $type {
-            type Output = Self;
-
-            fn mul(self, rhs: Self) -> Self::Output {
-                crate::SoftFloat::mul(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
-            }
-        }
-
-        impl std::ops::MulAssign for $type {
-            fn mul_assign(&mut self, rhs: Self) {
-                *self = *self * rhs;
-            }
-        }
-
-        impl std::ops::Div for $type {
-            type Output = Self;
-
-            fn div(self, rhs: Self) -> Self::Output {
-                crate::SoftFloat::div(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
-            }
-        }
-
-        impl std::ops::DivAssign for $type {
-            fn div_assign(&mut self, rhs: Self) {
-                *self = *self / rhs;
-            }
-        }
-
-        impl std::ops::Rem for $type {
-            type Output = Self;
-
-            fn rem(self, rhs: Self) -> Self::Output {
-                crate::SoftFloat::rem(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
-            }
-        }
-
-        impl std::ops::RemAssign for $type {
-            fn rem_assign(&mut self, rhs: Self) {
-                *self = *self % rhs;
-            }
-        }
-
-        impl std::cmp::PartialEq for $type {
-            fn eq(&self, other: &Self) -> bool {
-                crate::SoftFloat::eq(self, other)
-            }
-        }
-
-        impl std::cmp::PartialOrd for $type {
-            fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-                crate::SoftFloat::compare(self, other)
-            }
-        }
-    };
-}
-
-impl_ops!(F16);
-impl_ops!(F32);
-impl_ops!(F64);
-#[cfg(feature = "f128")]
-impl_ops!(F128);
 
 #[cfg(test)]
 mod tests {
