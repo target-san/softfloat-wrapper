@@ -4,7 +4,18 @@ use std::borrow::Borrow;
 
 /// standard 64-bit float
 #[derive(Copy, Clone, Debug)]
+#[repr(transparent)]
 pub struct F64(float64_t);
+
+impl F64 {
+    pub const fn from_bits(v: u64) -> Self {
+        Self(float64_t { v })
+    }
+
+    pub const fn to_bits(&self) -> u64 {
+        self.0.v
+    }
+}
 
 impl SoftFloat for F64 {
     type Payload = u64;
@@ -16,12 +27,12 @@ impl SoftFloat for F64 {
     const SIGN_OFFSET: usize = 63;
     const EXPONENT_OFFSET: usize = 52;
 
-    #[cfg(not(feature = "concordium"))]
+    #[cfg(feature = "native-float")]
     fn from_native_f32(v: f32) -> Self {
         F32::from_bits(v.to_bits()).to_f64(RoundingMode::TiesToEven)
     }
 
-    #[cfg(not(feature = "concordium"))]
+    #[cfg(feature = "native-float")]
     fn from_native_f64(v: f64) -> Self {
         Self::from_bits(v.to_bits())
     }
@@ -33,12 +44,12 @@ impl SoftFloat for F64 {
 
     #[inline]
     fn from_bits(v: Self::Payload) -> Self {
-        Self(float64_t { v })
+        F64::from_bits(v)
     }
 
     #[inline]
     fn to_bits(&self) -> Self::Payload {
-        self.0.v
+        F64::to_bits(self)
     }
 
     #[inline]
@@ -176,7 +187,7 @@ impl SoftFloat for F64 {
         Self::from_bits(self.to_bits())
     }
 
-    #[cfg(not(feature = "concordium"))]
+    #[cfg(feature = "f128")]
     fn to_f128(&self, rnd: RoundingMode) -> super::F128 {
         rnd.set();
         let ret = unsafe { softfloat_sys::f64_to_f128(self.0) };
@@ -321,13 +332,13 @@ mod tests {
 
         let mut flag = ExceptionFlags::default();
         flag.set();
-        assert_eq!(a == a, false);
+        assert_eq!(a.eq(a), false);
         flag.get();
         assert_eq!(flag.is_invalid(), true);
 
         let mut flag = ExceptionFlags::default();
         flag.set();
-        assert_eq!(b == b, false);
+        assert_eq!(b.eq(b), false);
         flag.get();
         assert_eq!(flag.is_invalid(), false);
 
@@ -344,14 +355,14 @@ mod tests {
         assert_eq!(flag.is_invalid(), true);
     }
 
-    #[cfg(not(feature = "concordium"))]
+    #[cfg(feature = "native-float")]
     #[test]
     fn from_f32() {
         let a = F64::from_native_f32(0.1);
         assert_eq!(a.to_bits(), 0x3fb99999a0000000);
     }
 
-    #[cfg(not(feature = "concordium"))]
+    #[cfg(feature = "native-float")]
     #[test]
     fn from_f64() {
         let a = F64::from_native_f64(0.1);

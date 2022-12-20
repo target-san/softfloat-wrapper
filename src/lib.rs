@@ -21,12 +21,12 @@
 //! }
 //! ```
 
-#[cfg(not(feature = "concordium"))]
+#[cfg(feature = "f128")]
 mod f128;
 mod f16;
 mod f32;
 mod f64;
-#[cfg(not(feature = "concordium"))]
+#[cfg(feature = "f128")]
 pub use crate::f128::F128;
 pub use crate::f16::F16;
 pub use crate::f32::F32;
@@ -39,9 +39,6 @@ use num_traits::{
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::fmt::{LowerHex, UpperHex};
-
-pub const DEFAULT_ROUNDING_MODE: RoundingMode = RoundingMode::TiesToAway;
-pub const DEFAULT_EXACT_MODE: bool = true;
 
 /// floating-point rounding mode defined by standard
 #[derive(Copy, Clone, Debug)]
@@ -184,10 +181,10 @@ pub trait SoftFloat {
     /// Exponent bits offset
     const EXPONENT_OFFSET: usize;
 
-    #[cfg(not(feature = "concordium"))]
+    #[cfg(feature = "native-float")]
     fn from_native_f32(value: f32) -> Self;
 
-    #[cfg(not(feature = "concordium"))]
+    #[cfg(feature = "native-float")]
     fn from_native_f64(value: f64) -> Self;
 
     fn set_payload(&mut self, x: Self::Payload);
@@ -249,7 +246,7 @@ pub trait SoftFloat {
 
     fn to_f64(&self, rnd: RoundingMode) -> F64;
 
-    #[cfg(not(feature = "concordium"))]
+    #[cfg(feature = "f128")]
     fn to_f128(&self, rnd: RoundingMode) -> F128;
 
     fn round_to_integral(&self, rnd: RoundingMode) -> Self;
@@ -342,79 +339,65 @@ pub trait SoftFloat {
     }
 
     #[inline]
-    fn is_positive_zero(&self) -> bool {
-        self.is_positive()
-            && self.exponent() == Self::Payload::zero()
-            && self.mantissa() == Self::Payload::zero()
-    }
-
-    #[inline]
-    fn is_positive_subnormal(&self) -> bool {
-        self.is_positive()
-            && self.exponent() == Self::Payload::zero()
-            && self.mantissa() != Self::Payload::zero()
-    }
-
-    #[inline]
-    fn is_positive_normal(&self) -> bool {
-        self.is_positive()
-            && self.exponent() != Self::Payload::zero()
-            && self.exponent() != Self::EXPONENT_MASK
-    }
-
-    #[inline]
-    fn is_positive_infinity(&self) -> bool {
-        self.is_positive()
-            && self.exponent() == Self::EXPONENT_MASK
-            && self.mantissa() == Self::Payload::zero()
-    }
-
-    #[inline]
     fn is_negative(&self) -> bool {
-        self.sign() == Self::Payload::one()
+        !self.is_positive()
     }
 
     #[inline]
-    fn is_negative_zero(&self) -> bool {
-        self.is_negative()
-            && self.exponent() == Self::Payload::zero()
-            && self.mantissa() == Self::Payload::zero()
-    }
+    fn classify(&self) -> core::num::FpCategory {
+        use core::num::FpCategory;
+        let exp = self.exponent();
+        let mant = self.mantissa();
 
-    #[inline]
-    fn is_negative_subnormal(&self) -> bool {
-        self.is_negative()
-            && self.exponent() == Self::Payload::zero()
-            && self.mantissa() != Self::Payload::zero()
-    }
+        let zero = Self::Payload::zero();
 
-    #[inline]
-    fn is_negative_normal(&self) -> bool {
-        self.is_negative()
-            && self.exponent() != Self::Payload::zero()
-            && self.exponent() != Self::EXPONENT_MASK
-    }
-
-    #[inline]
-    fn is_negative_infinity(&self) -> bool {
-        self.is_negative()
-            && self.exponent() == Self::EXPONENT_MASK
-            && self.mantissa() == Self::Payload::zero()
+        if exp == zero && mant == zero {
+            FpCategory::Zero
+        }
+        else if exp == zero && mant != zero {
+            FpCategory::Subnormal
+        }
+        else if exp == Self::EXPONENT_MASK && mant == zero {
+            FpCategory::Infinite
+        }
+        else if exp == Self::EXPONENT_MASK && mant != zero {
+            FpCategory::Nan
+        }
+        else {
+            FpCategory::Normal
+        }
     }
 
     #[inline]
     fn is_nan(&self) -> bool {
-        self.exponent() == Self::EXPONENT_MASK && self.mantissa() != Self::Payload::zero()
+        self.classify() == core::num::FpCategory::Nan
+    }
+
+    #[inline]
+    fn is_infinity(&self) -> bool {
+        self.classify() == core::num::FpCategory::Infinite
     }
 
     #[inline]
     fn is_zero(&self) -> bool {
-        self.is_positive_zero() || self.is_negative_zero()
+        self.classify() == core::num::FpCategory::Zero
     }
 
     #[inline]
     fn is_subnormal(&self) -> bool {
-        self.exponent() == Self::Payload::zero()
+        self.classify() == core::num::FpCategory::Subnormal
+    }
+
+    #[inline]
+    fn is_normal(&self) -> bool {
+        self.classify() == core::num::FpCategory::Normal
+    }
+
+    #[inline]
+    fn is_finite(&self) -> bool {
+        use core::num::FpCategory;
+        let cat = self.classify();
+        cat != FpCategory::Infinite && cat != FpCategory::Nan
     }
 
     #[inline]
@@ -439,7 +422,7 @@ pub trait SoftFloat {
     }
 
     #[inline]
-    fn positive_infinity() -> Self
+    fn infinity() -> Self
     where
         Self: Sized,
     {
@@ -449,32 +432,11 @@ pub trait SoftFloat {
     }
 
     #[inline]
-    fn positive_zero() -> Self
+    fn zero() -> Self
     where
         Self: Sized,
     {
         let x = Self::from_bits(Self::Payload::zero());
-        x
-    }
-
-    #[inline]
-    fn negative_infinity() -> Self
-    where
-        Self: Sized,
-    {
-        let mut x = Self::from_bits(Self::Payload::zero());
-        x.set_sign(Self::Payload::one());
-        x.set_exponent(Self::EXPONENT_MASK);
-        x
-    }
-
-    #[inline]
-    fn negative_zero() -> Self
-    where
-        Self: Sized,
-    {
-        let mut x = Self::from_bits(Self::Payload::zero());
-        x.set_sign(Self::Payload::one());
         x
     }
 
@@ -489,151 +451,6 @@ pub trait SoftFloat {
         x
     }
 }
-
-macro_rules! impl_ops {
-    ($type:ident) => {
-        #[cfg(feature = "concordium")]
-        impl concordium_std::schema::SchemaType for $type {
-            fn get_type() -> concordium_std::schema::Type {
-                <<Self as crate::SoftFloat>::Payload as concordium_std::schema::SchemaType>::get_type()
-            }
-        }
-
-        #[cfg(feature = "concordium")]
-        impl concordium_std::Serial for $type {
-            fn serial<W: concordium_std::Write>(&self, out: &mut W) -> Result<(), W::Err> {
-                self.to_bits().serial(out)
-            }
-        }
-
-        #[cfg(feature = "concordium")]
-        impl concordium_std::Deserial for $type {
-            fn deserial<R: concordium_std::Read>(source: &mut R) -> concordium_std::ParseResult<Self> {
-                Ok(Self::from_bits(
-                    <Self as crate::SoftFloat>::Payload::deserial(source)?,
-                ))
-            }
-        }
-
-        impl Default for $type {
-            fn default() -> Self {
-                num_traits::Zero::zero()
-            }
-        }
-
-        impl num_traits::Zero for $type {
-            fn zero() -> Self {
-                crate::SoftFloat::positive_zero()
-            }
-
-            fn is_zero(&self) -> bool {
-                crate::SoftFloat::is_zero(self)
-            }
-        }
-
-        impl num_traits::One for $type {
-            fn one() -> Self {
-                crate::SoftFloat::from_i8(1, crate::DEFAULT_ROUNDING_MODE)
-            }
-        }
-
-        impl std::ops::Neg for $type {
-            type Output = Self;
-
-            fn neg(self) -> Self::Output {
-                crate::SoftFloat::neg(&self)
-            }
-        }
-
-        impl std::ops::Add for $type {
-            type Output = Self;
-
-            fn add(self, rhs: Self) -> Self::Output {
-                crate::SoftFloat::add(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
-            }
-        }
-
-        impl std::ops::AddAssign for $type {
-            fn add_assign(&mut self, rhs: Self) {
-                *self = *self + rhs;
-            }
-        }
-
-        impl std::ops::Sub for $type {
-            type Output = Self;
-
-            fn sub(self, rhs: Self) -> Self::Output {
-                crate::SoftFloat::sub(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
-            }
-        }
-
-        impl std::ops::SubAssign for $type {
-            fn sub_assign(&mut self, rhs: Self) {
-                *self = *self - rhs;
-            }
-        }
-
-        impl std::ops::Mul for $type {
-            type Output = Self;
-
-            fn mul(self, rhs: Self) -> Self::Output {
-                crate::SoftFloat::mul(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
-            }
-        }
-
-        impl std::ops::MulAssign for $type {
-            fn mul_assign(&mut self, rhs: Self) {
-                *self = *self * rhs;
-            }
-        }
-
-        impl std::ops::Div for $type {
-            type Output = Self;
-
-            fn div(self, rhs: Self) -> Self::Output {
-                crate::SoftFloat::div(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
-            }
-        }
-
-        impl std::ops::DivAssign for $type {
-            fn div_assign(&mut self, rhs: Self) {
-                *self = *self / rhs;
-            }
-        }
-
-        impl std::ops::Rem for $type {
-            type Output = Self;
-
-            fn rem(self, rhs: Self) -> Self::Output {
-                crate::SoftFloat::rem(&self, rhs, crate::DEFAULT_ROUNDING_MODE)
-            }
-        }
-
-        impl std::ops::RemAssign for $type {
-            fn rem_assign(&mut self, rhs: Self) {
-                *self = *self % rhs;
-            }
-        }
-
-        impl std::cmp::PartialEq for $type {
-            fn eq(&self, other: &Self) -> bool {
-                crate::SoftFloat::eq(self, other)
-            }
-        }
-
-        impl std::cmp::PartialOrd for $type {
-            fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-                crate::SoftFloat::compare(self, other)
-            }
-        }
-    };
-}
-
-impl_ops!(F16);
-impl_ops!(F32);
-impl_ops!(F64);
-#[cfg(not(feature = "concordium"))]
-impl_ops!(F128);
 
 #[cfg(test)]
 mod tests {
